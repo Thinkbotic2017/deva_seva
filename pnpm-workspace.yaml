@@ -1,0 +1,10 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+onlyBuiltDependencies:
+  - '@nestjs/core'
+  - argon2
+  - bcrypt
+  - msgpackr-extract
+  - puppeteer

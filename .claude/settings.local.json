@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd D:/Software/deva_seva && pnpm install 2>&1)",
+      "Bash(where pnpm:*)",
+      "Bash(npm install:*)",
+      "Bash(export PATH=\"$PATH:/c/Users/Vansh Tyagi/AppData/Roaming/npm\" && pnpm --version 2>&1)",
+      "Bash(export PATH=\"$PATH:/c/Users/Vansh Tyagi/AppData/Roaming/npm\" && cd D:/Software/deva_seva && pnpm install 2>&1)",
+      "Bash(export PATH=\"$PATH:/c/Users/Vansh Tyagi/AppData/Roaming/npm\" && cd D:/Software/deva_seva && pnpm approve-builds 2>&1)",
+      "Bash(export PATH=\"$PATH:/c/Users/Vansh Tyagi/AppData/Roaming/npm\" && cd D:/Software/deva_seva && pnpm install 2>&1 | tail -20)",
+      "Bash(export PATH=\"$PATH:/c/Users/Vansh Tyagi/AppData/Roaming/npm:/usr/bin\" && cd D:/Software/deva_seva && pnpm install 2>&1)",
+      "Bash(export PATH=\"$PATH:/c/Users/Vansh Tyagi/AppData/Roaming/npm\" && cd D:/Software/deva_seva/apps/api && pnpm test 2>&1)",
+      "Bash(export PATH=\"$PATH:/c/Users/Vansh Tyagi/AppData/Roaming/npm\" && cd D:/Software/deva_seva/apps/api && pnpm add -D @types/jest 2>&1)",
+      "Bash(export PATH=\"$PATH:/c/Users/Vansh Tyagi/AppData/Roaming/npm\" && cd D:/Software/deva_seva/apps/api && npx tsc --noEmit 2>&1)",
+      "Bash(export PATH=\"$PATH:/c/Users/Vansh Tyagi/AppData/Roaming/npm\" && cd D:/Software/deva_seva/apps/api && pnpm add dotenv 2>&1 | grep -E \"^\\(\\\\+|Done|Error\\)\")",
+      "Bash(export PATH=\"$PATH:/c/Users/Vansh Tyagi/AppData/Roaming/npm\" && cd D:/Software/deva_seva/apps/api && pnpm add dotenv 2>&1)",
+      "Bash(export PATH=\"$PATH:/c/Users/Vansh Tyagi/AppData/Roaming/npm\" && node -e \"const c = require\\('./node_modules/@nestjs/common'\\); console.log\\(Object.keys\\(c\\).filter\\(k => k.includes\\('Request'\\) || k.includes\\('429'\\) || k.includes\\('TooMany'\\)\\)\\)\" 2>&1)"
+    ]
+  }
+}
