@@ -1,0 +1,6 @@
+[submodule ".claude-plugin/skills/anthropics-skills"]
+	path = .claude-plugin/skills/anthropics-skills
+	url = https://github.com/anthropics/skills
+[submodule ".claude-plugin/skills/uncodixify"]
+	path = .claude-plugin/skills/uncodixify
+	url = https://github.com/dazeb/uncodixify-skill
