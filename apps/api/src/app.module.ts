@@ -28,6 +28,7 @@ import { DonationsModule } from './modules/donations/donations.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { SevasModule } from './modules/sevas/sevas.module';
 import { DevoteesModule } from './modules/devotees/devotees.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { DevoteesModule } from './modules/devotees/devotees.module';
     WebhooksModule,
     SevasModule,
     DevoteesModule,
+    ReportsModule,
   ],
   controllers: [HealthController],
   providers: [
