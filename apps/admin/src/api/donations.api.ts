@@ -59,6 +59,7 @@ export interface CreateDonationDto {
   pan?: string;
   isAnonymous?: boolean;
   notes?: string;
+  devoteeId?: string;
 }
 
 // ─── Query keys ───────────────────────────────────────────────────────────────
@@ -80,10 +81,15 @@ export function useDonations(filters: DonationFilters) {
   });
 }
 
+/** Fetches all active donation categories for the temple. Used as a queryFn. */
+export function fetchDonationCategories(): Promise<DonationCategory[]> {
+  return apiGet<DonationCategory[]>('/donations/categories');
+}
+
 export function useDonationCategories() {
   return useQuery({
     queryKey: donationKeys.categories,
-    queryFn: () => apiGet<DonationCategory[]>('/donations/categories'),
+    queryFn: fetchDonationCategories,
     staleTime: 5 * 60_000,             // categories rarely change
   });
 }

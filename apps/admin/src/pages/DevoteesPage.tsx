@@ -298,7 +298,7 @@ export function DevoteesPage() {
                       <Badge label={d.tier} variant={TIER_VARIANT[d.tier]} />
                     </td>
                     <td className="px-4 py-3 text-right text-label font-semibold text-text-primary">
-                      ₹{parseFloat(d.totalDonationAmount).toLocaleString('en-IN')}
+                      ₹{(parseFloat(d.totalDonationAmount ?? '0') || 0).toLocaleString('en-IN')}
                     </td>
                     <td className="px-4 py-3 text-center text-body text-text-secondary">
                       {d.donationCount}

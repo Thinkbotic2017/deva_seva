@@ -10,11 +10,11 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: 5173,
     proxy: {
       // Proxy /api calls to the NestJS API during local dev
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:3000',
         changeOrigin: true,
       },
     },

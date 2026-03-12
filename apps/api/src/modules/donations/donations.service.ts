@@ -512,6 +512,40 @@ export class DonationsService {
     this.logger.log(`Receipt resend queued for donation ${donationId}`);
   }
 
+  /**
+   * Returns all active donation categories for the temple, ordered by sort_order ASC.
+   * Used to populate the category dropdown in the counter UI.
+   * templeId is mandatory — never query without it.
+   */
+  async findCategories(templeId: string): Promise<DonationCategory[]> {
+    return this.categoryRepo.find({
+      where: { templeId, isActive: true },
+      order: { sortOrder: 'ASC' },
+    });
+  }
+
+  /**
+   * Links an existing devotee record to a donation (post-creation).
+   * Used when a new devotee is registered immediately after a cash donation.
+   * Scoped by templeId — cannot link a devotee to another temple's donation.
+   */
+  async linkDevotee(
+    templeId: string,
+    donationId: string,
+    devoteeId: string,
+  ): Promise<void> {
+    const donation = await this.donationRepo.findOne({
+      where: { id: donationId, templeId },
+    });
+
+    if (!donation) {
+      throw new NotFoundException(`Donation ${donationId} not found`);
+    }
+
+    await this.donationRepo.update(donationId, { devoteeId });
+    this.logger.log(`Donation ${donationId} linked to devotee ${devoteeId}`);
+  }
+
   // ─── Private helpers ──────────────────────────────────────────────────────
 
   /**

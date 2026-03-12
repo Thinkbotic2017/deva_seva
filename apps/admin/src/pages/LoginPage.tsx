@@ -20,12 +20,14 @@ export function LoginPage() {
   const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
+  const [sessionId, setSessionId] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [otpError, setOtpError] = useState('');
 
   const requestOtpMutation = useMutation({
     mutationFn: (phoneNumber: string) => requestOtp(phoneNumber),
-    onSuccess: () => {
+    onSuccess: (result) => {
+      setSessionId(result.sessionId);
       setStep('otp');
       setPhoneError('');
     },
@@ -36,8 +38,8 @@ export function LoginPage() {
   });
 
   const verifyOtpMutation = useMutation({
-    mutationFn: ({ phoneNumber, otpCode }: { phoneNumber: string; otpCode: string }) =>
-      verifyOtp(phoneNumber, otpCode),
+    mutationFn: ({ otpCode }: { phoneNumber: string; otpCode: string }) =>
+      verifyOtp(sessionId, otpCode),
     onSuccess: (result) => {
       setUser(result.user);
       navigate('/dashboard', { replace: true });

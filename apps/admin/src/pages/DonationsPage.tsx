@@ -9,6 +9,8 @@ import {
   useDonations, useDonationCategories, useCreateDonation,
   type DonationFilters, type CreateDonationDto,
 } from '@/api/donations.api';
+import { apiGet, apiPost, apiPatch } from '@/lib/api-client';
+import type { DevoteeDetail } from '@/api/devotees.api';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -68,6 +70,9 @@ export function DonationsPage() {
   const [isModalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<CreateDonationDto>(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof CreateDonationDto, string>>>({});
+  const [devoteeId, setDevoteeId] = useState<string | null>(null);
+  const [devoteeStatus, setDevoteeStatus] = useState<'found' | 'new' | null>(null);
+  const [devoteeFoundName, setDevoteeFoundName] = useState('');
 
   const { data, isLoading, isError } = useDonations(filters);
   const { data: categories = [] } = useDonationCategories();
@@ -80,6 +85,54 @@ export function DonationsPage() {
   function setField<K extends keyof CreateDonationDto>(key: K, value: CreateDonationDto[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
     setFormErrors((prev) => ({ ...prev, [key]: undefined }));
+  }
+
+  function closeModal() {
+    setModalOpen(false);
+    setForm(EMPTY_FORM);
+    setFormErrors({});
+    setDevoteeId(null);
+    setDevoteeStatus(null);
+    setDevoteeFoundName('');
+  }
+
+  async function handlePhoneChange(rawValue: string): Promise<void> {
+    setField('donorPhone', rawValue);
+    const cleaned = rawValue.replace(/\D/g, '');
+
+    if (cleaned.length === 0) {
+      // Phone cleared — undo any autofill that was applied
+      if (devoteeStatus === 'found') {
+        setForm((prev) => ({ ...prev, donorPhone: rawValue, donorName: '', pan: '' }));
+      }
+      setDevoteeId(null);
+      setDevoteeStatus(null);
+      setDevoteeFoundName('');
+      return;
+    }
+
+    // Only trigger lookup on a complete, valid Indian mobile number
+    if (!/^[6-9]\d{9}$/.test(cleaned)) return;
+
+    try {
+      const result = await apiGet<{ data: DevoteeDetail[]; total: number }>('/devotees', { search: cleaned, limit: 1 });
+      if (!result.data.length) throw new Error('not found');
+      const devotee = result.data[0];
+      setDevoteeId(devotee.id);
+      setDevoteeFoundName(devotee.name);
+      setDevoteeStatus('found');
+      // Autofill name and PAN — fields remain editable after
+      setForm((prev) => ({
+        ...prev,
+        donorName: devotee.name,
+        pan: devotee.panNumberMasked ?? prev.pan,
+      }));
+    } catch {
+      // 404 = devotee not on record; any network error treated the same way
+      setDevoteeId(null);
+      setDevoteeFoundName('');
+      setDevoteeStatus('new');
+    }
   }
 
   function validate(): boolean {
@@ -105,13 +158,30 @@ export function DonationsPage() {
       donorPhone: form.donorPhone || undefined,
       pan: form.pan || undefined,
       notes: form.notes || undefined,
+      // devoteeId only when found — backend links new devotees separately
+      devoteeId: devoteeStatus === 'found' ? (devoteeId ?? undefined) : undefined,
     };
 
     createMutation.mutate(dto, {
-      onSuccess: () => {
-        setModalOpen(false);
-        setForm(EMPTY_FORM);
-        setFormErrors({});
+      onSuccess: (createdDonation) => {
+        // Fire-and-forget: register new devotee after donation is saved
+        if (devoteeStatus === 'new' && form.donorPhone) {
+          const cleaned = form.donorPhone.replace(/\D/g, '');
+          if (/^[6-9]\d{9}$/.test(cleaned)) {
+            void (async () => {
+              try {
+                const newDevotee = await apiPost<{ id: string }>('/devotees', {
+                  name: form.donorName,
+                  phone: cleaned,
+                });
+                await apiPatch(`/donations/${createdDonation.id}/devotee`, { devoteeId: newDevotee.id });
+              } catch {
+                // silently ignore — donation is already saved
+              }
+            })();
+          }
+        }
+        closeModal();
       },
     });
   }
@@ -226,7 +296,7 @@ export function DonationsPage() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-body text-text-secondary">
-                      {d.category?.name ?? '—'}
+                      {categories.find((c) => c.id === d.categoryId)?.name ?? '—'}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className="text-label font-semibold text-text-primary">
@@ -264,7 +334,7 @@ export function DonationsPage() {
       </div>
 
       {/* Create donation modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} title="Record Donation">
+      <Modal isOpen={isModalOpen} onClose={closeModal} title="Record Donation">
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           <Input
             label="Donor Name *"
@@ -275,14 +345,22 @@ export function DonationsPage() {
           />
 
           <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Phone"
-              type="tel"
-              placeholder="98765 43210"
-              value={form.donorPhone ?? ''}
-              onChange={(e) => setField('donorPhone', e.target.value)}
-              error={formErrors.donorPhone}
-            />
+            <div>
+              <Input
+                label="Phone"
+                type="tel"
+                placeholder="98765 43210"
+                value={form.donorPhone ?? ''}
+                onChange={(e) => { void handlePhoneChange(e.target.value); }}
+                error={formErrors.donorPhone}
+              />
+              {devoteeStatus === 'found' && (
+                <p className="mt-1 text-caption text-green-600">✓ Devotee found: {devoteeFoundName}</p>
+              )}
+              {devoteeStatus === 'new' && (
+                <p className="mt-1 text-caption text-amber-600">New devotee — will be registered on save</p>
+              )}
+            </div>
             <Input
               label="PAN"
               placeholder="ABCDE1234F"
@@ -347,7 +425,7 @@ export function DonationsPage() {
               type="button"
               variant="ghost"
               className="flex-1"
-              onClick={() => setModalOpen(false)}
+              onClick={closeModal}
             >
               Cancel
             </Button>

@@ -71,6 +71,9 @@ export class OtpService {
     await this.enforceRateLimit(phone);
 
     const otp = this.generateOtpCode();
+    if (process.env.NODE_ENV === 'development') {
+      this.logger.debug(`[DEV ONLY] OTP for ${phone}: ${otp}`);
+    }
     const otpHash = await bcrypt.hash(otp, BCRYPT_ROUNDS);
     const expiresAt = new Date(Date.now() + OTP_EXPIRY_SECONDS * 1000);
 

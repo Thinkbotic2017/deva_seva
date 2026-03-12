@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Body,
   Param,
   Query,
@@ -24,6 +25,7 @@ import { ListDonationsQueryDto } from './dto/list-donations-query.dto';
 import { InitiateOnlineDonationDto } from './dto/initiate-online-donation.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { Donation } from '../../database/entities/donation.entity';
+import { DonationCategory } from '../../database/entities/donation-category.entity';
 
 /**
  * DonationsController — thin routing layer.
@@ -95,6 +97,18 @@ export class DonationsController {
   }
 
   /**
+   * GET /donations/categories
+   * Returns all active donation categories for the authenticated user's temple.
+   * MUST be declared before @Get(':id') to prevent NestJS routing "categories" as a UUID param.
+   */
+  @Get('categories')
+  async findCategories(
+    @CurrentUser() user: JwtPayload,
+  ): Promise<DonationCategory[]> {
+    return this.donationsService.findCategories(user.templeId);
+  }
+
+  /**
    * GET /donations/:id
    * Returns a single donation. Includes a pre-signed receipt URL if available.
    * Declared AFTER /by-order/:orderId to avoid route shadowing.
@@ -105,6 +119,24 @@ export class DonationsController {
     @Param('id') id: string,
   ): Promise<DonationWithReceiptUrl> {
     return this.donationsService.findById(user.templeId, id);
+  }
+
+  /**
+   * PATCH /donations/:id/devotee
+   * Links an existing devotee to a donation after it has been created.
+   * Called immediately after a new devotee is registered on the first donation save.
+   * templeId is taken from the JWT — enforces single-tenant scoping.
+   */
+  @Patch(':id/devotee')
+  @Roles(UserRole.ADMIN, UserRole.COUNTER_STAFF, UserRole.ACCOUNTANT)
+  @HttpCode(HttpStatus.OK)
+  async linkDevotee(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Body('devoteeId') devoteeId: string,
+  ): Promise<{ updated: boolean }> {
+    await this.donationsService.linkDevotee(user.templeId, id, devoteeId);
+    return { updated: true };
   }
 
   /**
