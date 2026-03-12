@@ -27,6 +27,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { DonationsModule } from './modules/donations/donations.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { SevasModule } from './modules/sevas/sevas.module';
+import { DevoteesModule } from './modules/devotees/devotees.module';
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { SevasModule } from './modules/sevas/sevas.module';
     DonationsModule,
     WebhooksModule,
     SevasModule,
+    DevoteesModule,
   ],
   controllers: [HealthController],
   providers: [
