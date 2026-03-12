@@ -11,7 +11,21 @@ export interface AutoPostIncomeParams {
   description: string;
   categoryId?: string;
   fundId?: string;
-  donationId: string;
+  /** Set when income is from a donation. Mutually exclusive with sevaBookingId. */
+  donationId?: string;
+  /** Set when income is from a seva booking. Mutually exclusive with donationId. */
+  sevaBookingId?: string;
+  recordedBy?: string;
+  fiscalYear: string;
+}
+
+export interface AutoPostReversalParams {
+  templeId: string;
+  /** Same decimal string that was originally posted. */
+  amount: string;
+  entryDate: Date;
+  description: string;
+  sevaBookingId: string;
   recordedBy?: string;
   fiscalYear: string;
 }
@@ -47,6 +61,7 @@ export class FinanceService {
       categoryId: params.categoryId,
       fundId: params.fundId,
       donationId: params.donationId,
+      sevaBookingId: params.sevaBookingId,
       isAutoPosted: true,
       recordedBy: params.recordedBy,
       fiscalYear: params.fiscalYear,
@@ -55,7 +70,40 @@ export class FinanceService {
     const saved = await entityManager.save(entry);
 
     this.logger.log(
-      `Ledger income entry ${saved.id} posted for donation ${params.donationId}`,
+      `Ledger income entry ${saved.id} posted [donation=${params.donationId ?? '-'}, seva_booking=${params.sevaBookingId ?? '-'}]`,
+    );
+
+    return saved;
+  }
+
+  /**
+   * Posts an EXPENSE reversal entry when a confirmed seva booking is cancelled.
+   * The ledger is APPEND-ONLY — this does NOT update or delete the original INCOME entry.
+   * The reversal amount offsets the income in finance reports.
+   *
+   * @param entityManager  Caller's transaction EntityManager.
+   * @param params         Reversal parameters — amount must match the original income amount.
+   */
+  async autoPostReversal(
+    entityManager: EntityManager,
+    params: AutoPostReversalParams,
+  ): Promise<FinanceLedger> {
+    const entry = entityManager.create(FinanceLedger, {
+      templeId: params.templeId,
+      type: LedgerType.EXPENSE,
+      amount: params.amount,
+      entryDate: params.entryDate,
+      description: params.description,
+      sevaBookingId: params.sevaBookingId,
+      isAutoPosted: true,
+      recordedBy: params.recordedBy,
+      fiscalYear: params.fiscalYear,
+    });
+
+    const saved = await entityManager.save(entry);
+
+    this.logger.log(
+      `Ledger reversal entry ${saved.id} posted for seva_booking ${params.sevaBookingId}`,
     );
 
     return saved;
