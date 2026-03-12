@@ -36,7 +36,9 @@ async function silentRefresh(): Promise<void> {
     const { id, ...rest } = response.user;
     setUser({ userId: id, ...rest });
   } catch {
-    // Not authenticated — that's fine; ProtectedRoute handles the redirect
+    // Refresh token expired or revoked — clear any user that was rehydrated
+    // from localStorage so ProtectedRoute correctly redirects to /login.
+    useAuthStore.getState().clearUser();
   } finally {
     setReady();
   }

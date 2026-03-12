@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -58,14 +59,28 @@ export function clearAccessToken(): void {
  * Holds user identity (role, templeId) but NOT the access token.
  * The token lives in the module-level variable above — invisible to React.
  */
-export const useAuthStore = create<AuthState & AuthActions>((set) => ({
-  user: null,
-  isReady: false,
+export const useAuthStore = create<AuthState & AuthActions>()(
+  persist(
+    (set) => ({
+      user: null,
+      isReady: false,
 
-  setUser: (user) => set({ user }),
-  clearUser: () => {
-    clearAccessToken();
-    set({ user: null });
-  },
-  setReady: () => set({ isReady: true }),
-}));
+      setUser: (user) => set({ user }),
+      clearUser: () => {
+        clearAccessToken();
+        set({ user: null });
+      },
+      setReady: () => set({ isReady: true }),
+    }),
+    {
+      name: 'devaseva-auth',
+      // Only persist the user identity — role, templeId, fullName.
+      // isReady is intentionally excluded: it must always start as false so
+      // silentRefresh() runs on every page load to validate the session
+      // server-side and obtain a fresh in-memory access token.
+      // The access token itself is never persisted — see the module-level
+      // _accessToken variable above.
+      partialize: (state) => ({ user: state.user }),
+    },
+  ),
+);
