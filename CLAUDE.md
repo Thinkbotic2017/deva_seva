@@ -11,6 +11,7 @@
 It replaces paper donation ledgers, manual seva registers, and WhatsApp receipts with a unified system.
 
 **The single most important workflow:**
+
 > A counter staff member records a ₹5,100 cash donation → devotee gets an 80G-compliant PDF receipt on WhatsApp in under 30 seconds. No manual steps.
 
 **Three apps in one monorepo:**
@@ -28,23 +29,27 @@ It replaces paper donation ledgers, manual seva registers, and WhatsApp receipts
 ## 2. Session Protocol — How Claude Code Should Work
 
 **At the start of every session:**
+
 1. Re-read CLAUDE.md sections relevant to the current task
 2. Check `BUILD_ORDER.md` to understand where we are in the build
 3. Before writing any code, state: "I am building [module]. The relevant rules are [X, Y, Z]."
 4. Never assume context from a previous session — always verify current state
 
 **Before writing any file:**
+
 - Check if the type/interface already exists in `packages/types/`
 - Check if a similar pattern already exists in another module
 - Confirm the DB schema in Section 7 before creating an entity
 - Confirm the API spec in Section 8 before creating a controller
 
 **When you make a decision not covered here:**
+
 - State the decision explicitly: "I'm choosing X because Y"
 - If financial logic is involved, add a comment in code explaining the reasoning
 - If security is involved, add a comment explaining the threat model
 
 **When you hit an error:**
+
 - Fix the root cause, never suppress the error
 - If TypeScript strict mode rejects something, fix the types — don't use `any` or `as`
 - If a test fails, fix the code — don't change the test to match wrong behavior
@@ -208,6 +213,7 @@ mkdir -p packages/types/src packages/utils/src packages/ui/src
 ```
 
 **After bootstrap, verify everything runs:**
+
 ```bash
 # Should start all 4 processes:
 pnpm dev
@@ -223,29 +229,29 @@ pnpm test
 
 ## 4. Tech Stack — Locked. Do Not Change Without Explicit Instruction.
 
-| Layer | Package | Version | Notes |
-|---|---|---|---|
-| API Framework | NestJS | 10.x | Never switch to Fastify — decorator patterns rely on Express |
-| ORM | TypeORM | 0.3.x | Not Prisma. TypeORM entity classes match DB schema exactly |
-| Database | PostgreSQL | 15 | Never use SQLite even for tests — use the test DB |
-| Cache + Queue | Redis + BullMQ | 7 + 5 | Not Celery, not AWS SQS |
-| Admin SPA | React 18 + Vite | | Not Next.js for admin — pure SPA, no SSR needed |
-| Server State | TanStack Query v5 | | Not SWR, not Redux |
-| UI State | Zustand v4 | | For auth store, UI store only. Not for server data |
-| Public Pages | Next.js 14 App Router | | SSR for SEO + Razorpay checkout |
-| Mobile | React Native + Expo | 0.73 / 50 | Not Flutter, not Capacitor |
-| Styling | Tailwind CSS 3 | | Design tokens in Section 10 |
-| Animations | Framer Motion 11 | | Admin + Web only. React Native uses Reanimated |
-| Charts | Recharts 2 | | Admin only |
-| Payments | Razorpay Node SDK | | |
-| WhatsApp | Gupshup BSP REST API | | Direct HTTP calls — no SDK |
-| SMS | Textlocal REST API | | Direct HTTP calls |
-| Email | AWS SES SDK v3 | | |
-| Storage | AWS S3 SDK v3 | | ap-south-1 region only |
-| PDF | Puppeteer 21 | | Headless Chrome, server-side only |
-| Auth | Passwordless OTP → JWT RS256 | | No passwords anywhere |
-| Testing | Jest + Supertest + Playwright | | |
-| Monorepo | Turborepo + PNPM | 1 + 8 | |
+| Layer         | Package                       | Version   | Notes                                                        |
+| ------------- | ----------------------------- | --------- | ------------------------------------------------------------ |
+| API Framework | NestJS                        | 10.x      | Never switch to Fastify — decorator patterns rely on Express |
+| ORM           | TypeORM                       | 0.3.x     | Not Prisma. TypeORM entity classes match DB schema exactly   |
+| Database      | PostgreSQL                    | 15        | Never use SQLite even for tests — use the test DB            |
+| Cache + Queue | Redis + BullMQ                | 7 + 5     | Not Celery, not AWS SQS                                      |
+| Admin SPA     | React 18 + Vite               |           | Not Next.js for admin — pure SPA, no SSR needed              |
+| Server State  | TanStack Query v5             |           | Not SWR, not Redux                                           |
+| UI State      | Zustand v4                    |           | For auth store, UI store only. Not for server data           |
+| Public Pages  | Next.js 14 App Router         |           | SSR for SEO + Razorpay checkout                              |
+| Mobile        | React Native + Expo           | 0.73 / 50 | Not Flutter, not Capacitor                                   |
+| Styling       | Tailwind CSS 3                |           | Design tokens in Section 10                                  |
+| Animations    | Framer Motion 11              |           | Admin + Web only. React Native uses Reanimated               |
+| Charts        | Recharts 2                    |           | Admin only                                                   |
+| Payments      | Razorpay Node SDK             |           |                                                              |
+| WhatsApp      | Gupshup BSP REST API          |           | Direct HTTP calls — no SDK                                   |
+| SMS           | Textlocal REST API            |           | Direct HTTP calls                                            |
+| Email         | AWS SES SDK v3                |           |                                                              |
+| Storage       | AWS S3 SDK v3                 |           | ap-south-1 region only                                       |
+| PDF           | Puppeteer 21                  |           | Headless Chrome, server-side only                            |
+| Auth          | Passwordless OTP → JWT RS256  |           | No passwords anywhere                                        |
+| Testing       | Jest + Supertest + Playwright |           |                                                              |
+| Monorepo      | Turborepo + PNPM              | 1 + 8     |                                                              |
 
 ---
 
@@ -254,6 +260,7 @@ pnpm test
 These are hard constraints. If any rule conflicts with a user request, follow the rule and explain why.
 
 ### 5.1 TypeScript
+
 ```
 ✗ NEVER use `any`. Use `unknown` and type-narrow it.
 ✗ NEVER use non-null assertion `!` without a preceding null check.
@@ -265,6 +272,7 @@ These are hard constraints. If any rule conflicts with a user request, follow th
 ```
 
 ### 5.2 Multi-Tenancy (The Most Important Backend Rule)
+
 ```
 ✗ NEVER write a query on a tenant-scoped table without WHERE temple_id = templeId.
 ✗ NEVER take templeId from the request body or query params.
@@ -280,6 +288,7 @@ Pattern for every service method:
 ```
 
 ### 5.3 Financial Data
+
 ```
 ✗ NEVER use float or number for money in the database. Use decimal(12,2) or decimal(14,2).
 ✗ NEVER store a running balance on funds table — calculate live from ledger.
@@ -292,6 +301,7 @@ Pattern for every service method:
 ```
 
 ### 5.4 Security
+
 ```
 ✗ NEVER store raw OTP codes. Store bcrypt(otp, 10) hash only.
 ✗ NEVER store PAN numbers in plaintext. Encrypt with AES-256-GCM. Key from env.
@@ -309,6 +319,7 @@ Pattern for every service method:
 ```
 
 ### 5.5 API Shape
+
 ```
 ✓ All endpoints: /api/v1/...
 ✓ All list endpoints have pagination — default limit=20, max=100
@@ -323,6 +334,7 @@ Pattern for every service method:
 ```
 
 ### 5.6 Code Style
+
 ```
 ✓ File names: kebab-case     (donation.service.ts, seva-booking.entity.ts)
 ✓ Class names: PascalCase    (DonationService, SevaBookingEntity)
@@ -344,27 +356,31 @@ These are the patterns for the project. Every module follows them. Do not invent
 ```typescript
 // packages/types/src/base.entity.ts
 import {
-  PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn,
-  DeleteDateColumn, Column, Index
-} from 'typeorm';
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+  Column,
+  Index,
+} from "typeorm";
 
 export abstract class BaseEntity {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  @CreateDateColumn({ name: "created_at", type: "timestamptz" })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  @UpdateDateColumn({ name: "updated_at", type: "timestamptz" })
   updatedAt: Date;
 
-  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })
+  @DeleteDateColumn({ name: "deleted_at", type: "timestamptz", nullable: true })
   deletedAt?: Date;
 }
 
 export abstract class TenantBaseEntity extends BaseEntity {
   @Index()
-  @Column({ name: 'temple_id', type: 'uuid' })
+  @Column({ name: "temple_id", type: "uuid" })
   templeId: string;
 }
 ```
@@ -373,46 +389,62 @@ export abstract class TenantBaseEntity extends BaseEntity {
 
 ```typescript
 // apps/api/src/database/entities/donation.entity.ts
-import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
-import { TenantBaseEntity } from './base.entity';
-import { DonationMode, DonationStatus } from '@devaseva/types';
+import { Entity, Column, ManyToOne, JoinColumn, Index } from "typeorm";
+import { TenantBaseEntity } from "./base.entity";
+import { DonationMode, DonationStatus } from "@devaseva/types";
 
-@Entity('donations')
-@Index(['templeId', 'paymentDate'])
-@Index(['templeId', 'fiscalYear'])
-@Index(['templeId', 'status'])
+@Entity("donations")
+@Index(["templeId", "paymentDate"])
+@Index(["templeId", "fiscalYear"])
+@Index(["templeId", "status"])
 export class Donation extends TenantBaseEntity {
-  @Column({ name: 'receipt_number', type: 'varchar', length: 50, nullable: true, unique: false })
+  @Column({
+    name: "receipt_number",
+    type: "varchar",
+    length: 50,
+    nullable: true,
+    unique: false,
+  })
   receiptNumber?: string;
 
-  @Column({ name: 'donor_name', type: 'varchar', length: 200 })
+  @Column({ name: "donor_name", type: "varchar", length: 200 })
   donorName: string;
 
-  @Column({ name: 'amount', type: 'decimal', precision: 12, scale: 2 })
+  @Column({ name: "amount", type: "decimal", precision: 12, scale: 2 })
   amount: string; // ← TypeORM returns decimal as string. Parse with parseFloat() when needed.
 
-  @Column({ name: 'mode', type: 'enum', enum: DonationMode })
+  @Column({ name: "mode", type: "enum", enum: DonationMode })
   mode: DonationMode;
 
-  @Column({ name: 'status', type: 'enum', enum: DonationStatus, default: DonationStatus.PENDING })
+  @Column({
+    name: "status",
+    type: "enum",
+    enum: DonationStatus,
+    default: DonationStatus.PENDING,
+  })
   status: DonationStatus;
 
-  @Column({ name: 'is_80g_eligible', type: 'boolean', default: false })
+  @Column({ name: "is_80g_eligible", type: "boolean", default: false })
   is80gEligible: boolean;
 
-  @Column({ name: 'donor_pan_encrypted', type: 'varchar', nullable: true })
+  @Column({ name: "donor_pan_encrypted", type: "varchar", nullable: true })
   donorPanEncrypted?: string; // AES-256-GCM — NEVER store raw PAN
 
-  @Column({ name: 'donor_pan_masked', type: 'varchar', length: 12, nullable: true })
+  @Column({
+    name: "donor_pan_masked",
+    type: "varchar",
+    length: 12,
+    nullable: true,
+  })
   donorPanMasked?: string; // ABCXX1234X — safe for display
 
-  @Column({ name: 'fiscal_year', type: 'varchar', length: 10 })
+  @Column({ name: "fiscal_year", type: "varchar", length: 10 })
   fiscalYear: string; // '2025-26'
 
-  @Column({ name: 'payment_date', type: 'date' })
+  @Column({ name: "payment_date", type: "date" })
   paymentDate: Date;
 
-  @Column({ name: 'receipt_pdf_s3_key', type: 'varchar', nullable: true })
+  @Column({ name: "receipt_pdf_s3_key", type: "varchar", nullable: true })
   receiptPdfS3Key?: string; // S3 key only — generate pre-signed URL at serve time
 }
 ```
@@ -422,12 +454,21 @@ export class Donation extends TenantBaseEntity {
 ```typescript
 // apps/api/src/modules/donations/dto/create-donation.dto.ts
 import {
-  IsString, IsNotEmpty, IsNumber, IsPositive, IsEnum,
-  IsOptional, IsBoolean, IsDateString, IsUUID,
-  MaxLength, Matches, Min
-} from 'class-validator';
-import { Transform, Type } from 'class-transformer';
-import { DonationMode } from '@devaseva/types';
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsPositive,
+  IsEnum,
+  IsOptional,
+  IsBoolean,
+  IsDateString,
+  IsUUID,
+  MaxLength,
+  Matches,
+  Min,
+} from "class-validator";
+import { Transform, Type } from "class-transformer";
+import { DonationMode } from "@devaseva/types";
 
 export class CreateDonationDto {
   @IsUUID()
@@ -440,7 +481,9 @@ export class CreateDonationDto {
 
   @IsOptional()
   @IsString()
-  @Matches(/^[6-9]\d{9}$/, { message: 'Phone must be a valid 10-digit Indian mobile number' })
+  @Matches(/^[6-9]\d{9}$/, {
+    message: "Phone must be a valid 10-digit Indian mobile number",
+  })
   donorPhone?: string;
 
   @IsNumber({ maxDecimalPlaces: 2 })
@@ -473,12 +516,16 @@ export class CreateDonationDto {
 
 ```typescript
 // apps/api/src/modules/donations/donations.service.ts
-import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
-import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bull';
-import { Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, DataSource } from "typeorm";
+import { InjectQueue } from "@nestjs/bull";
+import { Queue } from "bull";
+import { Logger } from "@nestjs/common";
 
 @Injectable()
 export class DonationsService {
@@ -489,7 +536,7 @@ export class DonationsService {
     private readonly donationRepo: Repository<Donation>,
     @InjectRepository(FinanceLedger)
     private readonly ledgerRepo: Repository<FinanceLedger>,
-    @InjectQueue('receipt_generation')
+    @InjectQueue("receipt_generation")
     private readonly receiptQueue: Queue,
     private readonly encryptionUtil: EncryptionUtil,
     private readonly fiscalYearUtil: FiscalYearUtil,
@@ -501,33 +548,43 @@ export class DonationsService {
    * Creates a new donation and auto-posts to finance ledger.
    * Uses a DB transaction to ensure both inserts succeed or neither does.
    */
-  async create(templeId: string, dto: CreateDonationDto, recordedBy: string): Promise<Donation> {
+  async create(
+    templeId: string,
+    dto: CreateDonationDto,
+    recordedBy: string,
+  ): Promise<Donation> {
     // Use a transaction — donation + ledger entry must be atomic
     return this.dataSource.transaction(async (manager) => {
-      const fiscalYear = this.fiscalYearUtil.fromDate(new Date(dto.paymentDate));
+      const fiscalYear = this.fiscalYearUtil.fromDate(
+        new Date(dto.paymentDate),
+      );
 
       // Encrypt PAN before storing
       let panEncrypted: string | undefined;
       let panMasked: string | undefined;
       if (dto.pan) {
         if (!this.isValidPan(dto.pan)) {
-          throw new UnprocessableEntityException('Invalid PAN format');
+          throw new UnprocessableEntityException("Invalid PAN format");
         }
         panEncrypted = this.encryptionUtil.encrypt(dto.pan);
         panMasked = this.maskPan(dto.pan);
       }
 
       const donation = manager.create(Donation, {
-        templeId,                          // ← Always from JWT, never from dto
+        templeId, // ← Always from JWT, never from dto
         categoryId: dto.categoryId,
         donorName: dto.donorName,
         donorPhone: dto.donorPhone,
-        amount: dto.amount.toFixed(2),     // ← Store as string for decimal precision
+        amount: dto.amount.toFixed(2), // ← Store as string for decimal precision
         mode: dto.mode,
         status: DonationStatus.CONFIRMED,
         donorPanEncrypted: panEncrypted,
         donorPanMasked: panMasked,
-        is80gEligible: await this.checkEligibility(templeId, dto.categoryId, dto.amount),
+        is80gEligible: await this.checkEligibility(
+          templeId,
+          dto.categoryId,
+          dto.amount,
+        ),
         paymentDate: new Date(dto.paymentDate),
         fiscalYear,
         recordedBy,
@@ -550,13 +607,22 @@ export class DonationsService {
       await manager.save(ledgerEntry);
 
       // Generate receipt number atomically via Redis INCR
-      savedDonation.receiptNumber = await this.receiptNumberUtil.next(templeId, fiscalYear);
+      savedDonation.receiptNumber = await this.receiptNumberUtil.next(
+        templeId,
+        fiscalYear,
+      );
       await manager.save(savedDonation);
 
       // Queue receipt PDF generation (async — don't wait)
-      await this.receiptQueue.add('generate', { donationId: savedDonation.id }, { priority: 1 });
+      await this.receiptQueue.add(
+        "generate",
+        { donationId: savedDonation.id },
+        { priority: 1 },
+      );
 
-      this.logger.log(`Donation ${savedDonation.id} created for temple ${templeId}`);
+      this.logger.log(
+        `Donation ${savedDonation.id} created for temple ${templeId}`,
+      );
       return savedDonation;
     });
   }
@@ -565,25 +631,36 @@ export class DonationsService {
    * Lists donations for a temple with pagination.
    * templeId is always required — never query without it.
    */
-  async findAll(templeId: string, query: ListDonationsQueryDto): Promise<PaginatedResult<Donation>> {
+  async findAll(
+    templeId: string,
+    query: ListDonationsQueryDto,
+  ): Promise<PaginatedResult<Donation>> {
     const { page = 1, limit = 20, fromDate, toDate, status, mode } = query;
     const safeLimitValue = Math.min(limit, 100); // Hard cap at 100
 
     const qb = this.donationRepo
-      .createQueryBuilder('d')
-      .where('d.temple_id = :templeId', { templeId }) // ← templeId guard is mandatory
-      .andWhere('d.deleted_at IS NULL')
-      .orderBy('d.payment_date', 'DESC')
+      .createQueryBuilder("d")
+      .where("d.temple_id = :templeId", { templeId }) // ← templeId guard is mandatory
+      .andWhere("d.deleted_at IS NULL")
+      .orderBy("d.payment_date", "DESC")
       .skip((page - 1) * safeLimitValue)
       .take(safeLimitValue);
 
-    if (fromDate) qb.andWhere('d.payment_date >= :fromDate', { fromDate });
-    if (toDate)   qb.andWhere('d.payment_date <= :toDate', { toDate });
-    if (status)   qb.andWhere('d.status = :status', { status });
-    if (mode)     qb.andWhere('d.mode = :mode', { mode });
+    if (fromDate) qb.andWhere("d.payment_date >= :fromDate", { fromDate });
+    if (toDate) qb.andWhere("d.payment_date <= :toDate", { toDate });
+    if (status) qb.andWhere("d.status = :status", { status });
+    if (mode) qb.andWhere("d.mode = :mode", { mode });
 
     const [data, total] = await qb.getManyAndCount();
-    return { data, meta: { page, limit: safeLimitValue, total, totalPages: Math.ceil(total / safeLimitValue) } };
+    return {
+      data,
+      meta: {
+        page,
+        limit: safeLimitValue,
+        total,
+        totalPages: Math.ceil(total / safeLimitValue),
+      },
+    };
   }
 }
 ```
@@ -592,14 +669,24 @@ export class DonationsService {
 
 ```typescript
 // apps/api/src/modules/donations/donations.controller.ts
-import { Controller, Get, Post, Body, Param, Query, Delete, Patch, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { UserRole } from '@devaseva/types';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Query,
+  Delete,
+  Patch,
+  UseGuards,
+} from "@nestjs/common";
+import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
+import { RolesGuard } from "../../common/guards/roles.guard";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
+import { UserRole } from "@devaseva/types";
 
-@Controller('donations')
+@Controller("donations")
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class DonationsController {
   constructor(private readonly donationsService: DonationsService) {}
@@ -607,11 +694,15 @@ export class DonationsController {
   @Post()
   @Roles(UserRole.ADMIN, UserRole.COUNTER_STAFF, UserRole.ACCOUNTANT)
   async create(
-    @CurrentUser() user: JwtPayload,     // templeId lives here
+    @CurrentUser() user: JwtPayload, // templeId lives here
     @Body() dto: CreateDonationDto,
   ) {
     // Controller never contains business logic — just passes to service
-    const donation = await this.donationsService.create(user.templeId, dto, user.sub);
+    const donation = await this.donationsService.create(
+      user.templeId,
+      dto,
+      user.sub,
+    );
     return donation; // ResponseInterceptor wraps in { success: true, data: ..., requestId: ... }
   }
 
@@ -629,11 +720,11 @@ export class DonationsController {
 
 ```typescript
 // apps/api/src/queues/receipt-generation/receipt-generation.processor.ts
-import { Process, Processor } from '@nestjs/bull';
-import { Job } from 'bull';
-import { Logger } from '@nestjs/common';
+import { Process, Processor } from "@nestjs/bull";
+import { Job } from "bull";
+import { Logger } from "@nestjs/common";
 
-@Processor('receipt_generation')
+@Processor("receipt_generation")
 export class ReceiptGenerationProcessor {
   private readonly logger = new Logger(ReceiptGenerationProcessor.name);
 
@@ -644,7 +735,7 @@ export class ReceiptGenerationProcessor {
     private readonly whatsappQueue: Queue,
   ) {}
 
-  @Process('generate')
+  @Process("generate")
   async handleGenerate(job: Job<{ donationId: string }>): Promise<void> {
     const { donationId } = job.data;
     this.logger.log(`Generating receipt for donation ${donationId}`);
@@ -658,24 +749,32 @@ export class ReceiptGenerationProcessor {
 
       // Upload to private S3 bucket — store KEY not URL
       const s3Key = `receipts/${donation.templeId}/${donation.fiscalYear}/${donationId}.pdf`;
-      await this.s3Service.upload(s3Key, pdfBuffer, 'application/pdf');
+      await this.s3Service.upload(s3Key, pdfBuffer, "application/pdf");
 
       // Update donation record
       await this.donationsService.markReceiptGenerated(donationId, s3Key);
 
       // Queue WhatsApp delivery
       if (donation.donorPhone && !donation.devotee?.whatsappOptedOut) {
-        await this.whatsappQueue.add('send', {
-          phone: donation.donorPhone,
-          template: 'donation_receipt',
-          variables: {
-            donorName: donation.donorName,
-            amount: donation.amount,
-            receiptNumber: donation.receiptNumber,
-            receiptUrl: '', // Pre-signed URL generated just before send
+        await this.whatsappQueue.add(
+          "send",
+          {
+            phone: donation.donorPhone,
+            template: "donation_receipt",
+            variables: {
+              donorName: donation.donorName,
+              amount: donation.amount,
+              receiptNumber: donation.receiptNumber,
+              receiptUrl: "", // Pre-signed URL generated just before send
+            },
+            donationId,
           },
-          donationId,
-        }, { priority: 2, attempts: 3, backoff: { type: 'exponential', delay: 2000 } });
+          {
+            priority: 2,
+            attempts: 3,
+            backoff: { type: "exponential", delay: 2000 },
+          },
+        );
       }
     } catch (error) {
       this.logger.error(`Receipt generation failed for ${donationId}:`, error);
@@ -689,8 +788,8 @@ export class ReceiptGenerationProcessor {
 
 ```typescript
 // apps/api/src/modules/webhooks/razorpay-webhook.service.ts
-import * as crypto from 'crypto';
-import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
+import * as crypto from "crypto";
+import { Injectable, UnauthorizedException, Logger } from "@nestjs/common";
 
 @Injectable()
 export class RazorpayWebhookService {
@@ -702,18 +801,20 @@ export class RazorpayWebhookService {
    */
   verifySignature(rawBody: Buffer, signature: string): void {
     const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET!)
+      .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET!)
       .update(rawBody)
-      .digest('hex');
+      .digest("hex");
 
     // Use timingSafeEqual to prevent timing attacks
     const signatureBuffer = Buffer.from(signature);
     const expectedBuffer = Buffer.from(expectedSignature);
 
-    if (signatureBuffer.length !== expectedBuffer.length ||
-        !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)) {
-      this.logger.warn('Razorpay webhook signature mismatch — possible attack');
-      throw new UnauthorizedException('Invalid webhook signature');
+    if (
+      signatureBuffer.length !== expectedBuffer.length ||
+      !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)
+    ) {
+      this.logger.warn("Razorpay webhook signature mismatch — possible attack");
+      throw new UnauthorizedException("Invalid webhook signature");
     }
   }
 
@@ -721,7 +822,8 @@ export class RazorpayWebhookService {
     const { order_id, id: paymentId, amount } = payload.payload.payment.entity;
 
     // Idempotency — check if we already processed this payment
-    const existing = await this.donationsService.findByRazorpayOrderId(order_id);
+    const existing =
+      await this.donationsService.findByRazorpayOrderId(order_id);
     if (!existing) {
       this.logger.warn(`Payment captured for unknown order ${order_id}`);
       return; // Don't throw — return 200 to Razorpay so it stops retrying
@@ -736,18 +838,18 @@ export class RazorpayWebhookService {
 }
 
 // Controller — uses raw body for HMAC
-@Controller('webhooks')
+@Controller("webhooks")
 export class WebhooksController {
-  @Post('razorpay')
+  @Post("razorpay")
   @HttpCode(200) // Always return 200 to Razorpay after logging — don't let it retry on auth errors
   async razorpay(
-    @RawBody() rawBody: Buffer,           // Must configure to receive raw buffer
-    @Headers('x-razorpay-signature') sig: string,
+    @RawBody() rawBody: Buffer, // Must configure to receive raw buffer
+    @Headers("x-razorpay-signature") sig: string,
     @Body() body: RazorpayWebhookDto,
   ) {
     this.razorpayWebhookService.verifySignature(rawBody, sig);
     await this.razorpayWebhookService.handle(body);
-    return { status: 'ok' };
+    return { status: "ok" };
   }
 }
 ```
@@ -756,19 +858,19 @@ export class WebhooksController {
 
 ```typescript
 // apps/api/src/common/utils/encryption.util.ts
-import * as crypto from 'crypto';
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import * as crypto from "crypto";
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class EncryptionUtil {
   private readonly key: Buffer;
-  private readonly ALGORITHM = 'aes-256-gcm';
+  private readonly ALGORITHM = "aes-256-gcm";
   private readonly IV_LENGTH = 16;
 
   constructor(private readonly config: ConfigService) {
-    const keyHex = this.config.getOrThrow<string>('ENCRYPTION_KEY');
-    this.key = Buffer.from(keyHex, 'hex'); // Must be 32 bytes
+    const keyHex = this.config.getOrThrow<string>("ENCRYPTION_KEY");
+    this.key = Buffer.from(keyHex, "hex"); // Must be 32 bytes
   }
 
   /**
@@ -778,9 +880,12 @@ export class EncryptionUtil {
   encrypt(plaintext: string): string {
     const iv = crypto.randomBytes(this.IV_LENGTH);
     const cipher = crypto.createCipheriv(this.ALGORITHM, this.key, iv);
-    const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+    const encrypted = Buffer.concat([
+      cipher.update(plaintext, "utf8"),
+      cipher.final(),
+    ]);
     const authTag = cipher.getAuthTag();
-    return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted.toString('hex')}`;
+    return `${iv.toString("hex")}:${authTag.toString("hex")}:${encrypted.toString("hex")}`;
   }
 
   /**
@@ -788,13 +893,15 @@ export class EncryptionUtil {
    * NEVER log the result.
    */
   decrypt(stored: string): string {
-    const [ivHex, authTagHex, ciphertextHex] = stored.split(':');
-    const iv = Buffer.from(ivHex, 'hex');
-    const authTag = Buffer.from(authTagHex, 'hex');
-    const ciphertext = Buffer.from(ciphertextHex, 'hex');
+    const [ivHex, authTagHex, ciphertextHex] = stored.split(":");
+    const iv = Buffer.from(ivHex, "hex");
+    const authTag = Buffer.from(authTagHex, "hex");
+    const ciphertext = Buffer.from(ciphertextHex, "hex");
     const decipher = crypto.createDecipheriv(this.ALGORITHM, this.key, iv);
     decipher.setAuthTag(authTag);
-    return decipher.update(ciphertext).toString('utf8') + decipher.final('utf8');
+    return (
+      decipher.update(ciphertext).toString("utf8") + decipher.final("utf8")
+    );
   }
 }
 ```
@@ -803,9 +910,9 @@ export class EncryptionUtil {
 
 ```typescript
 // apps/api/src/common/utils/receipt-number.util.ts
-import { Injectable } from '@nestjs/common';
-import { InjectRedis } from '@nestjs-modules/ioredis';
-import Redis from 'ioredis';
+import { Injectable } from "@nestjs/common";
+import { InjectRedis } from "@nestjs-modules/ioredis";
+import Redis from "ioredis";
 
 @Injectable()
 export class ReceiptNumberUtil {
@@ -816,12 +923,16 @@ export class ReceiptNumberUtil {
    * Atomic via Redis INCR — safe under concurrent requests.
    * Format: RCPT-2025-26-0001
    */
-  async next(templeId: string, fiscalYear: string, prefix = 'RCPT'): Promise<string> {
+  async next(
+    templeId: string,
+    fiscalYear: string,
+    prefix = "RCPT",
+  ): Promise<string> {
     const key = `receipt_seq:${templeId}:${fiscalYear}`;
     const seq = await this.redis.incr(key);
     // Set 2-year expiry on first call (seq === 1)
     if (seq === 1) await this.redis.expire(key, 60 * 60 * 24 * 730);
-    return `${prefix}-${fiscalYear}-${String(seq).padStart(4, '0')}`;
+    return `${prefix}-${fiscalYear}-${String(seq).padStart(4, "0")}`;
   }
 }
 ```
@@ -830,20 +941,23 @@ export class ReceiptNumberUtil {
 
 ```typescript
 // apps/admin/src/api/donations.api.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from './client';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiClient } from "./client";
 
 // Query keys — always use arrays for cache invalidation
 export const donationKeys = {
-  all: ['donations'] as const,
-  list: (filters: DonationFilters) => ['donations', 'list', filters] as const,
-  detail: (id: string) => ['donations', 'detail', id] as const,
+  all: ["donations"] as const,
+  list: (filters: DonationFilters) => ["donations", "list", filters] as const,
+  detail: (id: string) => ["donations", "detail", id] as const,
 };
 
 export function useDonations(filters: DonationFilters) {
   return useQuery({
     queryKey: donationKeys.list(filters),
-    queryFn: () => apiClient.get<PaginatedResult<Donation>>('/donations', { params: filters }),
+    queryFn: () =>
+      apiClient.get<PaginatedResult<Donation>>("/donations", {
+        params: filters,
+      }),
     staleTime: 30_000, // 30 seconds — donation lists are relatively stable
   });
 }
@@ -852,11 +966,11 @@ export function useCreateDonation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (dto: CreateDonationDto) =>
-      apiClient.post<Donation>('/donations', dto),
+      apiClient.post<Donation>("/donations", dto),
     onSuccess: () => {
       // Invalidate all donation lists — they need to refresh
       queryClient.invalidateQueries({ queryKey: donationKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['finance', 'summary'] });
+      queryClient.invalidateQueries({ queryKey: ["finance", "summary"] });
     },
   });
 }
@@ -869,10 +983,12 @@ export function useCreateDonation() {
 **Every entity must match this schema exactly. Column names are snake_case in the DB.**
 
 ### Tenant Scoping
+
 Every table except `temples`, `otp_sessions` inherits `temple_id uuid NOT NULL`.
 This column is the security boundary. Never query without it.
 
 ### Table: temples
+
 ```sql
 id                    uuid PK DEFAULT gen_random_uuid()
 name                  varchar(200) NOT NULL
@@ -913,6 +1029,7 @@ deleted_at            timestamptz
 ```
 
 ### Table: users
+
 ```sql
 id, created_at, updated_at, deleted_at
 temple_id             uuid NOT NULL
@@ -934,6 +1051,7 @@ INDEX (temple_id)
 ```
 
 ### Table: otp_sessions
+
 ```sql
 id                    uuid PK
 phone                 varchar(15) NOT NULL
@@ -948,6 +1066,7 @@ INDEX (phone, is_used, expires_at)
 ```
 
 ### Table: sessions
+
 ```sql
 id                    uuid PK
 user_id               uuid NOT NULL REFERENCES users(id)
@@ -963,6 +1082,7 @@ INDEX (user_id, is_revoked)
 ```
 
 ### Table: devotees
+
 ```sql
 id, created_at, updated_at, deleted_at, temple_id
 name                  varchar(200) NOT NULL
@@ -997,6 +1117,7 @@ INDEX (temple_id, phone)
 ```
 
 ### Table: donation_categories
+
 ```sql
 id, created_at, updated_at, deleted_at, temple_id
 name                  varchar(200) NOT NULL
@@ -1009,6 +1130,7 @@ fund_id               uuid REFERENCES funds(id)
 ```
 
 ### Table: donations
+
 ```sql
 id, created_at, updated_at, deleted_at, temple_id
 receipt_number        varchar(50)
@@ -1041,6 +1163,7 @@ INDEX (temple_id, status)
 ```
 
 ### Table: funds
+
 ```sql
 id, created_at, updated_at, deleted_at, temple_id
 name                  varchar(200) NOT NULL
@@ -1053,6 +1176,7 @@ sort_order            integer DEFAULT 0
 ```
 
 ### Table: finance_ledger
+
 ```sql
 id, created_at, updated_at, deleted_at, temple_id
 type                  ENUM('INCOME','EXPENSE') NOT NULL
@@ -1080,6 +1204,7 @@ INDEX (temple_id, fiscal_year, type)
 ```
 
 ### Table: finance_categories
+
 ```sql
 id, created_at, updated_at, temple_id
 name                  varchar(200) NOT NULL
@@ -1089,6 +1214,7 @@ sort_order            integer DEFAULT 0
 ```
 
 ### Table: seva_types
+
 ```sql
 id, created_at, updated_at, deleted_at, temple_id
 name                  varchar(200) NOT NULL
@@ -1112,6 +1238,7 @@ sort_order            integer DEFAULT 0
 ```
 
 ### Table: priests
+
 ```sql
 id, created_at, updated_at, deleted_at, temple_id
 user_id               uuid REFERENCES users(id)  -- If priest has a login
@@ -1124,6 +1251,7 @@ profile_photo_url     varchar                    -- S3 key
 ```
 
 ### Table: seva_bookings
+
 ```sql
 id, created_at, updated_at, deleted_at, temple_id
 booking_number        varchar(50)
@@ -1161,6 +1289,7 @@ INDEX (temple_id, status)
 ```
 
 ### Table: inventory_items
+
 ```sql
 id, created_at, updated_at, deleted_at, temple_id
 name                  varchar(200) NOT NULL
@@ -1176,6 +1305,7 @@ last_low_stock_alert_at timestamptz             -- Prevents alert spam
 ```
 
 ### Table: inventory_transactions
+
 ```sql
 id, created_at, updated_at, deleted_at, temple_id
 item_id               uuid NOT NULL REFERENCES inventory_items(id)
@@ -1197,6 +1327,7 @@ recorded_by           uuid REFERENCES users(id)
 ```
 
 ### Table: vendors
+
 ```sql
 id, created_at, updated_at, deleted_at, temple_id
 name                  varchar(200) NOT NULL
@@ -1210,6 +1341,7 @@ is_active             boolean DEFAULT true
 ```
 
 ### Table: festivals
+
 ```sql
 id, created_at, updated_at, deleted_at, temple_id
 name                  varchar(200) NOT NULL
@@ -1229,6 +1361,7 @@ created_by            uuid REFERENCES users(id)
 ```
 
 ### Table: announcements
+
 ```sql
 id, created_at, updated_at, deleted_at, temple_id
 title                 varchar(200) NOT NULL
@@ -1241,6 +1374,7 @@ created_by            uuid REFERENCES users(id)
 ```
 
 ### Table: notification_logs
+
 ```sql
 id, created_at, updated_at, temple_id
 channel               ENUM('WHATSAPP','SMS','EMAIL','PUSH')
@@ -1262,6 +1396,7 @@ seva_booking_id       uuid
 ```
 
 ### Table: audit_logs
+
 ```sql
 id, created_at, temple_id
 actor_id              uuid                  -- NULL for system actions
@@ -1286,6 +1421,7 @@ request_id            varchar
 **Pagination default:** limit=20, max=100
 
 ### Auth — `/api/v1/auth`
+
 ```
 POST  /request-otp     PUBLIC   body: { phone: string, templeSlug?: string }
 POST  /verify-otp      PUBLIC   body: { phone, otp, deviceInfo? }
@@ -1296,6 +1432,7 @@ POST  /logout-all      JWT      (no body)
 ```
 
 ### Temples — `/api/v1/temples`
+
 ```
 GET   /profile         JWT       → temple (sensitive fields masked)
 PATCH /profile         JWT+Admin body: Partial<Temple>
@@ -1307,6 +1444,7 @@ GET   /qr-code         JWT+Admin → PNG buffer for /t/{slug} donation URL
 ```
 
 ### Donations — `/api/v1/donations`
+
 ```
 GET   /                JWT      ?page&limit&fromDate&toDate&categoryId&mode&status&search&fiscalYear
 POST  /                JWT      body: { categoryId, donorName, donorPhone?, amount, mode,
@@ -1328,6 +1466,7 @@ DELETE /categories/:id JWT+Admin
 ```
 
 ### Sevas — `/api/v1/sevas`
+
 ```
 GET   /types               JWT
 POST  /types               JWT+Admin
@@ -1349,6 +1488,7 @@ POST  /bookings/initiate-payment JWT body: { bookingId } → { razorpayOrderId, 
 ```
 
 ### Devotees — `/api/v1/devotees`
+
 ```
 GET   /                JWT      ?page&limit&search&tier&city
 POST  /                JWT      body: { name, phone, email?, gotra?, pan?, tier?, ... }
@@ -1362,6 +1502,7 @@ PATCH /:id/opt-out     JWT      body: { channel: 'WHATSAPP' | 'SMS' }
 ```
 
 ### Finance — `/api/v1/finance`
+
 ```
 GET   /ledger              JWT         ?page&limit&type&fromDate&toDate&fundId&fiscalYear
 POST  /expenses            JWT         body: { amount, categoryId, description, ... }
@@ -1378,6 +1519,7 @@ POST  /reports/monthly     JWT         body: { month, year } → { downloadUrl }
 ```
 
 ### Inventory — `/api/v1/inventory`
+
 ```
 GET   /items               JWT         ?category&search&lowStockOnly
 POST  /items               JWT+Admin
@@ -1395,6 +1537,7 @@ DELETE /vendors/:id        JWT+Admin
 ```
 
 ### Users — `/api/v1/users`
+
 ```
 GET   /                JWT+Admin
 POST  /invite          JWT+Admin  body: { fullName, phone, role }
@@ -1404,6 +1547,7 @@ GET   /:id/activity    JWT+Admin  → last 50 audit log entries for this user
 ```
 
 ### Communication — `/api/v1/communication`
+
 ```
 GET   /broadcasts      JWT        ?page&limit
 POST  /broadcasts      JWT+Admin  body: { channel, templateName, audienceFilter, message?, scheduledAt? }
@@ -1411,6 +1555,7 @@ GET   /templates       JWT+Admin  → approved WhatsApp template list from Gupsh
 ```
 
 ### Analytics — `/api/v1/analytics`
+
 ```
 GET   /donations       JWT  ?fromDate&toDate
 GET   /sevas           JWT  ?fromDate&toDate
@@ -1420,6 +1565,7 @@ GET   /finance         JWT  ?fiscalYear
 ```
 
 ### Festivals — `/api/v1/festivals`
+
 ```
 GET   /                JWT
 POST  /                JWT+Admin
@@ -1429,6 +1575,7 @@ PATCH /:id/publish     JWT+Admin
 ```
 
 ### Announcements — `/api/v1/announcements`
+
 ```
 GET   /                PUBLIC(?templeSlug) or JWT
 POST  /                JWT+Admin
@@ -1438,6 +1585,7 @@ PATCH /:id/publish     JWT+Admin
 ```
 
 ### Webhooks — `/api/v1/webhooks`
+
 ```
 POST  /razorpay          PUBLIC  ← MUST verify X-Razorpay-Signature HMAC before processing
 POST  /gupshup/delivery  PUBLIC  ← MUST verify HMAC before processing
@@ -1513,6 +1661,7 @@ EXPENSE_APPROVAL_THRESHOLD=5000   # Expenses above ₹5,000 require trustee appr
 ## 10. Design System Tokens
 
 ### Tailwind Config Extension
+
 ```javascript
 // tailwind.config.js
 module.exports = {
@@ -1520,31 +1669,36 @@ module.exports = {
     extend: {
       colors: {
         saffron: {
-          50:  '#FDE8D8',
-          500: '#E8530A',  // PRIMARY — one CTA button per screen only
-          700: '#B33D05',  // hover state
-          900: '#7A1F00',  // H1 headings
+          50: "#FDE8D8",
+          500: "#E8530A", // PRIMARY — one CTA button per screen only
+          700: "#B33D05", // hover state
+          900: "#7A1F00", // H1 headings
         },
         gold: {
-          50:  '#FFF5CC',
-          400: '#C49A00',  // accent / secondary
+          50: "#FFF5CC",
+          400: "#C49A00", // accent / secondary
         },
-        cream: '#FEF9F3',        // page background (not white)
-        'ink':       '#1C1B1F',  // body text
-        'ink-mid':   '#49454F',  // secondary text
-        'ink-light': '#79747E',  // captions, placeholders
+        cream: "#FEF9F3", // page background (not white)
+        ink: "#1C1B1F", // body text
+        "ink-mid": "#49454F", // secondary text
+        "ink-light": "#79747E", // captions, placeholders
       },
       fontFamily: {
         // Noto Sans covers all 9 Indian scripts used in DevaSeva
-        sans: ['Noto Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        sans: [
+          "Noto Sans",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "sans-serif",
+        ],
       },
       borderRadius: {
-        'xs':  '2px',
-        'sm':  '4px',
-        'md':  '8px',
-        'lg':  '12px',
-        'xl':  '16px',
-        '2xl': '24px',
+        xs: "2px",
+        sm: "4px",
+        md: "8px",
+        lg: "12px",
+        xl: "16px",
+        "2xl": "24px",
       },
     },
   },
@@ -1552,6 +1706,7 @@ module.exports = {
 ```
 
 ### Typography Rules
+
 ```
 text-[40px] font-bold    → Display (cover titles, success screens)
 text-[28px] font-bold    → H1 (one per screen, colour: saffron-900)
@@ -1564,6 +1719,7 @@ text-[14px] font-medium  → Label (button text, tabs)
 ```
 
 ### Component Rules
+
 ```
 Buttons:
   - Primary (saffron-500): ONE per screen. 48px height desktop, 56px mobile.
@@ -1601,6 +1757,7 @@ reconciliation          Cron: nightly 02:00 IST         LOW (5)
 ```
 
 **All jobs must have:**
+
 - `attempts: 3`
 - `backoff: { type: 'exponential', delay: 2000 }`
 - A dead-letter queue for failed jobs after 3 attempts
@@ -1745,7 +1902,7 @@ Every module must have tests before moving to the next phase.
 ```typescript
 // Unit test template — copy for every service
 // apps/api/src/modules/donations/__tests__/donations.service.spec.ts
-describe('DonationsService', () => {
+describe("DonationsService", () => {
   let service: DonationsService;
   let donationRepo: jest.Mocked<Repository<Donation>>;
 
@@ -1753,44 +1910,70 @@ describe('DonationsService', () => {
     const module = await Test.createTestingModule({
       providers: [
         DonationsService,
-        { provide: getRepositoryToken(Donation), useValue: createMockRepository() },
-        { provide: getRepositoryToken(FinanceLedger), useValue: createMockRepository() },
-        { provide: getQueueToken('receipt_generation'), useValue: { add: jest.fn() } },
-        { provide: EncryptionUtil, useValue: { encrypt: jest.fn(), decrypt: jest.fn() } },
-        { provide: FiscalYearUtil, useValue: { fromDate: jest.fn().mockReturnValue('2025-26') } },
-        { provide: ReceiptNumberUtil, useValue: { next: jest.fn().mockResolvedValue('RCPT-2025-26-0001') } },
-        { provide: DataSource, useValue: { transaction: jest.fn((cb) => cb({})) } },
+        {
+          provide: getRepositoryToken(Donation),
+          useValue: createMockRepository(),
+        },
+        {
+          provide: getRepositoryToken(FinanceLedger),
+          useValue: createMockRepository(),
+        },
+        {
+          provide: getQueueToken("receipt_generation"),
+          useValue: { add: jest.fn() },
+        },
+        {
+          provide: EncryptionUtil,
+          useValue: { encrypt: jest.fn(), decrypt: jest.fn() },
+        },
+        {
+          provide: FiscalYearUtil,
+          useValue: { fromDate: jest.fn().mockReturnValue("2025-26") },
+        },
+        {
+          provide: ReceiptNumberUtil,
+          useValue: { next: jest.fn().mockResolvedValue("RCPT-2025-26-0001") },
+        },
+        {
+          provide: DataSource,
+          useValue: { transaction: jest.fn((cb) => cb({})) },
+        },
       ],
     }).compile();
 
     service = module.get(DonationsService);
   });
 
-  describe('create', () => {
-    it('should encrypt PAN when provided', async () => {
+  describe("create", () => {
+    it("should encrypt PAN when provided", async () => {
       // Arrange
-      const dto = { ...validDonationDto, pan: 'ABCDE1234F' };
+      const dto = { ...validDonationDto, pan: "ABCDE1234F" };
       // Act
-      await service.create('temple-uuid', dto, 'user-uuid');
+      await service.create("temple-uuid", dto, "user-uuid");
       // Assert
-      expect(encryptionUtil.encrypt).toHaveBeenCalledWith('ABCDE1234F');
+      expect(encryptionUtil.encrypt).toHaveBeenCalledWith("ABCDE1234F");
     });
 
-    it('should reject invalid PAN format', async () => {
-      const dto = { ...validDonationDto, pan: 'INVALID' };
-      await expect(service.create('temple-uuid', dto, 'user-uuid'))
-        .rejects.toThrow(UnprocessableEntityException);
+    it("should reject invalid PAN format", async () => {
+      const dto = { ...validDonationDto, pan: "INVALID" };
+      await expect(
+        service.create("temple-uuid", dto, "user-uuid"),
+      ).rejects.toThrow(UnprocessableEntityException);
     });
 
-    it('should queue receipt generation after creation', async () => {
-      await service.create('temple-uuid', validDonationDto, 'user-uuid');
-      expect(receiptQueue.add).toHaveBeenCalledWith('generate', expect.any(Object), expect.any(Object));
+    it("should queue receipt generation after creation", async () => {
+      await service.create("temple-uuid", validDonationDto, "user-uuid");
+      expect(receiptQueue.add).toHaveBeenCalledWith(
+        "generate",
+        expect.any(Object),
+        expect.any(Object),
+      );
     });
 
-    it('should always use templeId from parameter, not from dto', async () => {
-      await service.create('temple-uuid', validDonationDto, 'user-uuid');
+    it("should always use templeId from parameter, not from dto", async () => {
+      await service.create("temple-uuid", validDonationDto, "user-uuid");
       expect(donationRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ templeId: 'temple-uuid' })
+        expect.objectContaining({ templeId: "temple-uuid" }),
       );
     });
   });
@@ -1841,7 +2024,35 @@ MISTAKE: Building Phase 9+ without Phase 1-3 having passing tests
 FIX: Follow the build order in Section 12. Tests must pass before the next phase begins.
 ```
 
+## 15. Skills, Rules & External Resources
+
+### Before every session, read in this order:
+
+1. This file (CLAUDE.md) — always first
+2. `.claude/rules/` — ALL rule files before writing any code
+3. `.claude-plugin/skills/uncodixify/SKILL.md` — before ANY frontend/UI work
+4. `.claude-plugin/skills/anthropics-skills/skills/{relevant}/SKILL.md` — task-specific
+
+### Skill lookup table
+
+| Task                         | Read first                                                                |
+| ---------------------------- | ------------------------------------------------------------------------- | ---- | --------------- |
+| Any React component or UI    | `.claude-plugin/skills/uncodixify/SKILL.md`                               |
+| Word/Excel/PowerPoint file   | `.claude-plugin/skills/anthropics-skills/skills/{docx                     | xlsx | pptx}/SKILL.md` |
+| Frontend design & components | `.claude-plugin/skills/anthropics-skills/skills/frontend-design/SKILL.md` |
+
+### Slash commands available (in .claude/commands/)
+
+- `/review` — structured code review against CLAUDE.md rules
+- `/test` — generate tests for current file
+- `/security` — security audit against the security guide
+
+### Reference docs (read before first session)
+
+- `docs-reference/security-guide.md` — mandatory before building auth or payments
+- `docs-reference/claude-code-guide.md` — Claude Code best practices
+
 ---
 
-*DevaSeva CLAUDE.md — v2.0 — Infosware Solutions Pvt. Ltd. — Feb 2026*
-*Restart from scratch. Build it right this time.*
+_DevaSeva CLAUDE.md — v2.0 — Infosware Solutions Pvt. Ltd. — Feb 2026_
+_Restart from scratch. Build it right this time._

@@ -30,6 +30,8 @@ import { SevasModule } from './modules/sevas/sevas.module';
 import { DevoteesModule } from './modules/devotees/devotees.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { QueuesModule } from './queues/queues.module';
+import { TempleModule } from './modules/temple/temple.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -74,6 +76,8 @@ import { QueuesModule } from './queues/queues.module';
     DevoteesModule,
     ReportsModule,
     QueuesModule,
+    TempleModule,
+    UsersModule,
   ],
   controllers: [HealthController],
   providers: [
