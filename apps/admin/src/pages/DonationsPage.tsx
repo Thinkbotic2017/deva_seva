@@ -336,14 +336,6 @@ export function DonationsPage() {
       {/* Create donation modal */}
       <Modal isOpen={isModalOpen} onClose={closeModal} title="Record Donation">
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          <Input
-            label="Donor Name *"
-            placeholder="Full name"
-            value={form.donorName}
-            onChange={(e) => setField('donorName', e.target.value)}
-            error={formErrors.donorName}
-          />
-
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Input
@@ -369,6 +361,14 @@ export function DonationsPage() {
               maxLength={10}
             />
           </div>
+
+          <Input
+            label="Donor Name *"
+            placeholder="Full name"
+            value={form.donorName}
+            onChange={(e) => setField('donorName', e.target.value)}
+            error={formErrors.donorName}
+          />
 
           <Select
             label="Category *"

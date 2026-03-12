@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -21,6 +22,8 @@ import {
   InitiateOnlineResult,
 } from './donations.service';
 import { CreateDonationDto } from './dto/create-donation.dto';
+import { CreateDonationCategoryDto } from './dto/create-donation-category.dto';
+import { UpdateDonationCategoryDto } from './dto/update-donation-category.dto';
 import { ListDonationsQueryDto } from './dto/list-donations-query.dto';
 import { InitiateOnlineDonationDto } from './dto/initiate-online-donation.dto';
 import { Public } from '../../common/decorators/public.decorator';
@@ -98,14 +101,65 @@ export class DonationsController {
 
   /**
    * GET /donations/categories
-   * Returns all active donation categories for the authenticated user's temple.
+   * Returns donation categories for the authenticated user's temple.
+   * Pass ?includeInactive=true to include inactive categories (settings page only).
    * MUST be declared before @Get(':id') to prevent NestJS routing "categories" as a UUID param.
    */
   @Get('categories')
   async findCategories(
     @CurrentUser() user: JwtPayload,
+    @Query('includeInactive') includeInactive?: string,
   ): Promise<DonationCategory[]> {
+    if (includeInactive === 'true') {
+      return this.donationsService.findAllCategories(user.templeId);
+    }
     return this.donationsService.findCategories(user.templeId);
+  }
+
+  /**
+   * POST /donations/categories
+   * Creates a new donation category for the temple.
+   * templeId comes from the JWT — never from the request body.
+   */
+  @Post('categories')
+  @Roles(UserRole.ADMIN, UserRole.ACCOUNTANT)
+  @HttpCode(HttpStatus.CREATED)
+  async createCategory(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: CreateDonationCategoryDto,
+  ): Promise<DonationCategory> {
+    return this.donationsService.createCategory(user.templeId, dto);
+  }
+
+  /**
+   * PATCH /donations/categories/:id
+   * Updates a category. Only provided fields are changed.
+   * MUST be declared before @Patch(':id/devotee') to avoid ambiguous matching.
+   */
+  @Patch('categories/:id')
+  @Roles(UserRole.ADMIN, UserRole.ACCOUNTANT)
+  @HttpCode(HttpStatus.OK)
+  async updateCategory(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') categoryId: string,
+    @Body() dto: UpdateDonationCategoryDto,
+  ): Promise<DonationCategory> {
+    return this.donationsService.updateCategory(user.templeId, categoryId, dto);
+  }
+
+  /**
+   * DELETE /donations/categories/:id
+   * Soft-deletes a category (sets deleted_at). Historical donations are unaffected.
+   * MUST be declared before @Get(':id') / @Patch(':id/devotee') to avoid misrouting.
+   */
+  @Delete('categories/:id')
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteCategory(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') categoryId: string,
+  ): Promise<void> {
+    return this.donationsService.deleteCategory(user.templeId, categoryId);
   }
 
   /**

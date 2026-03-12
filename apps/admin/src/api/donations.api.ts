@@ -1,13 +1,34 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiGet, apiPost } from '@/lib/api-client';
+import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api-client';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface DonationCategory {
   id: string;
   name: string;
+  description?: string;
   is80gEligible: boolean;
   isActive: boolean;
+  color: string;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export interface CreateDonationCategoryDto {
+  name: string;
+  description?: string;
+  is80gEligible?: boolean;
+  color?: string;
+  sortOrder?: number;
+}
+
+export interface UpdateDonationCategoryDto {
+  name?: string;
+  description?: string;
+  is80gEligible?: boolean;
+  color?: string;
+  sortOrder?: number;
+  isActive?: boolean;
 }
 
 export interface Donation {
@@ -101,6 +122,50 @@ export function useCreateDonation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: donationKeys.all });
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
+/** Fetches all categories including inactive ones — for the Settings management page. */
+export function useDonationCategoriesAdmin() {
+  return useQuery({
+    queryKey: [...donationKeys.categories, 'admin'] as const,
+    queryFn: () =>
+      apiGet<DonationCategory[]>('/donations/categories', {
+        includeInactive: 'true',
+      }),
+    staleTime: 0,
+  });
+}
+
+export function useCreateCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: CreateDonationCategoryDto) =>
+      apiPost<DonationCategory>('/donations/categories', dto),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: donationKeys.categories });
+    },
+  });
+}
+
+export function useUpdateCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: UpdateDonationCategoryDto }) =>
+      apiPatch<DonationCategory>(`/donations/categories/${id}`, dto),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: donationKeys.categories });
+    },
+  });
+}
+
+export function useDeleteCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiDelete(`/donations/categories/${id}`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: donationKeys.categories });
     },
   });
 }

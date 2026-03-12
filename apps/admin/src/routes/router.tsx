@@ -8,6 +8,7 @@ import { SevaBookingsPage } from '@/pages/SevaBookingsPage';
 import { DevoteesPage } from '@/pages/DevoteesPage';
 import { FinancePage } from '@/pages/FinancePage';
 import { ReportsPage } from '@/pages/ReportsPage';
+import { SettingsPage } from '@/pages/SettingsPage';
 
 /**
  * Application router.
@@ -34,7 +35,7 @@ export const router = createBrowserRouter([
           { path: 'reports',   element: <ReportsPage /> },
           // Placeholder stubs for future phases
           { path: 'users',     element: <ComingSoon label="Staff Management" /> },
-          { path: 'settings',  element: <ComingSoon label="Settings" /> },
+          { path: 'settings',  element: <SettingsPage /> },
         ],
       },
     ],

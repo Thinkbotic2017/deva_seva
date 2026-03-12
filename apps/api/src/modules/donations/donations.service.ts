@@ -20,6 +20,8 @@ import { ReceiptNumberUtil } from '../../common/utils/receipt-number.util';
 import { S3Service } from '../../common/services/s3.service';
 import { isValidPan, maskPan } from '../../common/utils/pan.util';
 import { CreateDonationDto } from './dto/create-donation.dto';
+import { CreateDonationCategoryDto } from './dto/create-donation-category.dto';
+import { UpdateDonationCategoryDto } from './dto/update-donation-category.dto';
 import { ListDonationsQueryDto } from './dto/list-donations-query.dto';
 import { JOB_MAX_ATTEMPTS, JOB_BACKOFF_DELAY_MS } from '../../common/constants';
 import { toPaginatedResult } from '../../common/utils/pagination.util';
@@ -522,6 +524,91 @@ export class DonationsService {
       where: { templeId, isActive: true },
       order: { sortOrder: 'ASC' },
     });
+  }
+
+  /**
+   * Returns ALL categories for the temple (active + inactive, excluding soft-deleted).
+   * Used by the Settings page for category management.
+   */
+  async findAllCategories(templeId: string): Promise<DonationCategory[]> {
+    return this.categoryRepo.find({
+      where: { templeId },
+      order: { sortOrder: 'ASC', createdAt: 'ASC' },
+    });
+  }
+
+  /**
+   * Creates a new donation category scoped to the temple.
+   * templeId ALWAYS comes from the JWT — never from the request body.
+   */
+  async createCategory(
+    templeId: string,
+    dto: CreateDonationCategoryDto,
+  ): Promise<DonationCategory> {
+    const category = this.categoryRepo.create({
+      templeId,
+      name: dto.name,
+      description: dto.description,
+      is80gEligible: dto.is80gEligible ?? false,
+      color: dto.color ?? '#E8530A',
+      sortOrder: dto.sortOrder ?? 0,
+      isActive: true,
+    });
+    const saved = await this.categoryRepo.save(category);
+    this.logger.log(`Category '${saved.name}' created for temple ${templeId}`);
+    return saved;
+  }
+
+  /**
+   * Updates a category. Only fields present in the DTO are changed.
+   * Throws NotFoundException if the category doesn't belong to this temple.
+   */
+  async updateCategory(
+    templeId: string,
+    categoryId: string,
+    dto: UpdateDonationCategoryDto,
+  ): Promise<DonationCategory> {
+    const existing = await this.categoryRepo.findOne({
+      where: { id: categoryId, templeId },
+    });
+    if (!existing) {
+      throw new NotFoundException(`Category ${categoryId} not found`);
+    }
+
+    await this.categoryRepo.update(categoryId, {
+      ...(dto.name !== undefined && { name: dto.name }),
+      ...(dto.description !== undefined && { description: dto.description }),
+      ...(dto.is80gEligible !== undefined && { is80gEligible: dto.is80gEligible }),
+      ...(dto.color !== undefined && { color: dto.color }),
+      ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
+      ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+    });
+
+    const updated = await this.categoryRepo.findOne({
+      where: { id: categoryId, templeId },
+    });
+    if (!updated) {
+      throw new NotFoundException(`Category ${categoryId} not found after update`);
+    }
+
+    this.logger.log(`Category ${categoryId} updated for temple ${templeId}`);
+    return updated;
+  }
+
+  /**
+   * Soft-deletes a donation category (sets deleted_at).
+   * Historical donations that reference this category are unaffected.
+   * Throws NotFoundException if the category doesn't belong to this temple.
+   */
+  async deleteCategory(templeId: string, categoryId: string): Promise<void> {
+    const existing = await this.categoryRepo.findOne({
+      where: { id: categoryId, templeId },
+    });
+    if (!existing) {
+      throw new NotFoundException(`Category ${categoryId} not found`);
+    }
+    await this.categoryRepo.softDelete(categoryId);
+    this.logger.log(`Category ${categoryId} soft-deleted for temple ${templeId}`);
   }
 
   /**

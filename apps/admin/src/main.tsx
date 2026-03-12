@@ -35,9 +35,10 @@ async function silentRefresh(): Promise<void> {
     // Map API response shape (id) to AuthUser shape (userId)
     const { id, ...rest } = response.user;
     setUser({ userId: id, ...rest });
-  } catch {
+  } catch (err) {
     // Refresh token expired or revoked — clear any user that was rehydrated
     // from localStorage so ProtectedRoute correctly redirects to /login.
+    console.warn('silentRefresh failed:', err);
     useAuthStore.getState().clearUser();
   } finally {
     setReady();
