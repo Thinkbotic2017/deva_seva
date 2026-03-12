@@ -5,6 +5,8 @@ import { EncryptionUtil } from './utils/encryption.util';
 import { FiscalYearUtil } from './utils/fiscal-year.util';
 import { ReceiptNumberUtil } from './utils/receipt-number.util';
 import { S3Service } from './services/s3.service';
+import { PdfService } from './services/pdf.service';
+import { GupshupService } from './services/gupshup.service';
 
 /**
  * CommonModule exposes shared utilities to every module in the app.
@@ -30,7 +32,7 @@ import { S3Service } from './services/s3.service';
       }),
     }),
   ],
-  providers: [EncryptionUtil, FiscalYearUtil, ReceiptNumberUtil, S3Service],
-  exports: [JwtModule, EncryptionUtil, FiscalYearUtil, ReceiptNumberUtil, S3Service],
+  providers: [EncryptionUtil, FiscalYearUtil, ReceiptNumberUtil, S3Service, PdfService, GupshupService],
+  exports: [JwtModule, EncryptionUtil, FiscalYearUtil, ReceiptNumberUtil, S3Service, PdfService, GupshupService],
 })
 export class CommonModule {}

@@ -29,6 +29,7 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { SevasModule } from './modules/sevas/sevas.module';
 import { DevoteesModule } from './modules/devotees/devotees.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { QueuesModule } from './queues/queues.module';
 
 @Module({
   imports: [
@@ -72,6 +73,7 @@ import { ReportsModule } from './modules/reports/reports.module';
     SevasModule,
     DevoteesModule,
     ReportsModule,
+    QueuesModule,
   ],
   controllers: [HealthController],
   providers: [
