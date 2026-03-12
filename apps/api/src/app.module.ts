@@ -25,6 +25,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { HealthController } from './health/health.controller';
 import { AuthModule } from './modules/auth/auth.module';
 import { DonationsModule } from './modules/donations/donations.module';
+import { WebhooksModule } from './modules/webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { DonationsModule } from './modules/donations/donations.module';
 
     AuthModule,
     DonationsModule,
+    WebhooksModule,
   ],
   controllers: [HealthController],
   providers: [

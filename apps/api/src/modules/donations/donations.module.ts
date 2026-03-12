@@ -5,6 +5,7 @@ import { Donation } from '../../database/entities/donation.entity';
 import { DonationCategory } from '../../database/entities/donation-category.entity';
 import { Temple } from '../../database/entities/temple.entity';
 import { FinanceModule } from '../finance/finance.module';
+import { RazorpayModule } from '../razorpay/razorpay.module';
 import { DonationsService } from './donations.service';
 import { DonationsController } from './donations.controller';
 
@@ -17,6 +18,7 @@ import { DonationsController } from './donations.controller';
     TypeOrmModule.forFeature([Donation, DonationCategory, Temple]),
     BullModule.registerQueue({ name: 'receipt_generation' }),
     FinanceModule,
+    RazorpayModule,
   ],
   providers: [DonationsService],
   controllers: [DonationsController],

@@ -8,6 +8,7 @@ import {
 import { getQueueToken } from '@nestjs/bull';
 import { DonationsService } from '../donations.service';
 import { FinanceService } from '../../finance/finance.service';
+import { RazorpayService } from '../../razorpay/razorpay.service';
 import { Donation } from '../../../database/entities/donation.entity';
 import { DonationCategory } from '../../../database/entities/donation-category.entity';
 import { Temple } from '../../../database/entities/temple.entity';
@@ -79,6 +80,7 @@ describe('DonationsService', () => {
   let fiscalYearUtil: jest.Mocked<FiscalYearUtil>;
   let receiptNumberUtil: jest.Mocked<ReceiptNumberUtil>;
   let s3Service: jest.Mocked<S3Service>;
+  let razorpayService: jest.Mocked<RazorpayService>;
   let ds: ReturnType<typeof mockDataSource>;
 
   beforeEach(async () => {
@@ -115,6 +117,12 @@ describe('DonationsService', () => {
       getPresignedUrl: jest.fn().mockResolvedValue('https://s3.example.com/presigned'),
     } as unknown as jest.Mocked<S3Service>;
 
+    razorpayService = {
+      keyId: 'rzp_test_key',
+      createOrder: jest.fn(),
+      verifyPaymentSignature: jest.fn(),
+    } as unknown as jest.Mocked<RazorpayService>;
+
     const module = await Test.createTestingModule({
       providers: [
         DonationsService,
@@ -128,6 +136,7 @@ describe('DonationsService', () => {
         { provide: ReceiptNumberUtil, useValue: receiptNumberUtil },
         { provide: S3Service, useValue: s3Service },
         { provide: DataSource, useValue: ds },
+        { provide: RazorpayService, useValue: razorpayService },
       ],
     }).compile();
 
