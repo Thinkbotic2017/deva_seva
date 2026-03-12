@@ -32,6 +32,8 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { QueuesModule } from './queues/queues.module';
 import { TempleModule } from './modules/temple/temple.module';
 import { UsersModule } from './modules/users/users.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { SuperAdminModule } from './modules/superadmin/superadmin.module';
 
 @Module({
   imports: [
@@ -78,6 +80,8 @@ import { UsersModule } from './modules/users/users.module';
     QueuesModule,
     TempleModule,
     UsersModule,
+    DashboardModule,
+    SuperAdminModule,
   ],
   controllers: [HealthController],
   providers: [
