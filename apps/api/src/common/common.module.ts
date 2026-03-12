@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EncryptionUtil } from './utils/encryption.util';
 import { FiscalYearUtil } from './utils/fiscal-year.util';
 import { ReceiptNumberUtil } from './utils/receipt-number.util';
+import { S3Service } from './services/s3.service';
 
 /**
  * CommonModule exposes shared utilities to every module in the app.
@@ -29,7 +30,7 @@ import { ReceiptNumberUtil } from './utils/receipt-number.util';
       }),
     }),
   ],
-  providers: [EncryptionUtil, FiscalYearUtil, ReceiptNumberUtil],
-  exports: [JwtModule, EncryptionUtil, FiscalYearUtil, ReceiptNumberUtil],
+  providers: [EncryptionUtil, FiscalYearUtil, ReceiptNumberUtil, S3Service],
+  exports: [JwtModule, EncryptionUtil, FiscalYearUtil, ReceiptNumberUtil, S3Service],
 })
 export class CommonModule {}
