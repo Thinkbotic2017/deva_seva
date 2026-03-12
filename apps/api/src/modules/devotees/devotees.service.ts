@@ -38,6 +38,14 @@ export type DevoteeWithStats = Omit<Devotee, 'panNumberEncrypted'> & {
 /** Safe devotee — panNumberEncrypted removed from all list/detail responses. */
 export type SafeDevotee = Omit<Devotee, 'panNumberEncrypted'>;
 
+/** SafeDevotee with computed donation/seva stats attached for list responses. */
+export type SafeDevoteeWithStats = SafeDevotee & {
+  totalDonationAmount: string;
+  donationCount: number;
+  lastDonationAt: Date | null;
+  sevaCount: number;
+};
+
 /**
  * DevoteesService manages the devotee CRM.
  *
@@ -124,15 +132,22 @@ export class DevoteesService {
   }
 
   /**
-   * Returns paginated devotees for a temple.
+   * Returns paginated devotees for a temple with computed donation/seva stats.
    * templeId guard is mandatory — never omit it.
    *
    * Search matches name OR phone using ILIKE (case-insensitive).
+   *
+   * Stats are computed via correlated subqueries in a single SQL round-trip:
+   *   - totalDonationAmount: SUM(amount) WHERE devotee_id = d.id
+   *   - donationCount:       COUNT(id)   WHERE devotee_id = d.id
+   *   - lastDonationAt:      MAX(payment_date) WHERE devotee_id = d.id
+   *   - sevaCount:           COUNT(id)   WHERE devotee_id = d.id (seva_bookings)
+   * All subqueries are also guarded by temple_id and deleted_at IS NULL.
    */
   async findAll(
     templeId: string,
     query: ListDevoteesQueryDto,
-  ): Promise<PaginatedResult<SafeDevotee>> {
+  ): Promise<PaginatedResult<SafeDevoteeWithStats>> {
     const page = query.page ?? 1;
     const limit = Math.min(query.limit ?? 20, 100);
 
@@ -140,6 +155,42 @@ export class DevoteesService {
       .createQueryBuilder('d')
       .where('d.temple_id = :templeId', { templeId })
       .andWhere('d.deleted_at IS NULL')
+      // Subquery: sum of confirmed donation amounts for this devotee
+      .addSelect(
+        `(SELECT COALESCE(SUM(don.amount::numeric), 0)
+           FROM donations don
+           WHERE don.devotee_id = d.id
+             AND don.temple_id = :templeId
+             AND don.deleted_at IS NULL)`,
+        'totalDonationAmount',
+      )
+      // Subquery: number of donations
+      .addSelect(
+        `(SELECT COUNT(don.id)
+           FROM donations don
+           WHERE don.devotee_id = d.id
+             AND don.temple_id = :templeId
+             AND don.deleted_at IS NULL)`,
+        'donationCount',
+      )
+      // Subquery: date of most recent donation
+      .addSelect(
+        `(SELECT MAX(don.payment_date)
+           FROM donations don
+           WHERE don.devotee_id = d.id
+             AND don.temple_id = :templeId
+             AND don.deleted_at IS NULL)`,
+        'lastDonationAt',
+      )
+      // Subquery: number of seva bookings
+      .addSelect(
+        `(SELECT COUNT(sb.id)
+           FROM seva_bookings sb
+           WHERE sb.devotee_id = d.id
+             AND sb.temple_id = :templeId
+             AND sb.deleted_at IS NULL)`,
+        'sevaCount',
+      )
       .orderBy('d.name', 'ASC')
       .skip((page - 1) * limit)
       .take(limit);
@@ -157,9 +208,23 @@ export class DevoteesService {
       qb.andWhere('d.city ILIKE :city', { city: `%${query.city}%` });
     }
 
-    const [rows, total] = await qb.getManyAndCount();
-    const safe = rows.map((r) => this.stripEncryptedPan(r));
-    return toPaginatedResult(safe, total, page, limit);
+    // getCount() strips SELECT/ORDER BY/LIMIT — the subqueries are not executed for the count
+    const total = await qb.getCount();
+    // getRawAndEntities() returns mapped entities + raw rows (which carry the extra aliases)
+    const { entities, raw } = await qb.getRawAndEntities();
+
+    const rows = entities.map((entity, i) => {
+      const r = raw[i];
+      return {
+        ...this.stripEncryptedPan(entity),
+        totalDonationAmount: parseFloat(r.totalDonationAmount ?? '0').toFixed(2),
+        donationCount: parseInt(r.donationCount ?? '0', 10),
+        lastDonationAt: r.lastDonationAt ? new Date(r.lastDonationAt as string) : null,
+        sevaCount: parseInt(r.sevaCount ?? '0', 10),
+      } satisfies SafeDevoteeWithStats;
+    });
+
+    return toPaginatedResult(rows, total, page, limit);
   }
 
   /**

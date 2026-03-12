@@ -18,6 +18,7 @@ import { JwtPayload, UserRole, PaginatedResult } from '@devaseva/types';
 import {
   DevoteesService,
   SafeDevotee,
+  SafeDevoteeWithStats,
   DevoteeWithStats,
 } from './devotees.service';
 import { FindOrCreateDevoteeDto } from './dto/find-or-create-devotee.dto';
@@ -66,7 +67,7 @@ export class DevoteesController {
   async findAll(
     @CurrentUser() user: JwtPayload,
     @Query() query: ListDevoteesQueryDto,
-  ): Promise<PaginatedResult<SafeDevotee>> {
+  ): Promise<PaginatedResult<SafeDevoteeWithStats>> {
     return this.devoteesService.findAll(user.templeId, query);
   }
 
