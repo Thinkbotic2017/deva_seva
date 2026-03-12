@@ -18,7 +18,8 @@
       "Bash(cd /d/Software/deva_seva && PATH=\"$PATH:/c/Users/Vansh Tyagi/AppData/Roaming/npm\" pnpm --filter api test 2>&1 | tail -30)",
       "Bash(cd /d/Software/deva_seva/apps/api && node --version && npx jest --passWithNoTests 2>&1 | tail -20)",
       "Bash(npx tsc:*)",
-      "Bash(npx jest:*)"
+      "Bash(npx jest:*)",
+      "Bash(pnpm install:*)"
     ]
   }
 }
