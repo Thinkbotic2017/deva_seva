@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { apiGet } from '@/lib/api-client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiGet, apiPut } from '@/lib/api-client';
 import type { PaginatedResult, Donation } from './donations.api';
 import type { SevaBooking } from './sevas.api';
 
@@ -22,11 +22,48 @@ export interface Devotee {
   createdAt: string;
 }
 
-export interface DevoteeDetail extends Devotee {
-  panNumberMasked: string | null;
+/**
+ * Nested stats block returned by GET /devotees/:id.
+ * Note: the field is `totalDonated` (not `totalDonationAmount`) — different from the list API.
+ */
+export interface DevoteeStats {
+  donationCount: number;
+  /** Decimal string — parseFloat() before arithmetic. */
+  totalDonated: string;
+  lastDonationAt: string | null;
+  sevaCount: number;
+}
+
+/**
+ * Full devotee profile returned by GET /devotees/:id.
+ * Stats are nested under `stats` — NOT flat on the object like the list API.
+ */
+export interface DevoteeDetail {
+  id: string;
+  name: string;
+  phone: string;
+  email: string | null;
+  tier: DevoteeTier;
+  city: string | null;
+  state: string | null;
   gotra: string | null;
   nakshatra: string | null;
+  panNumberMasked: string | null;
+  memberSince: string | null;
   notes: string | null;
+  createdAt: string;
+  stats: DevoteeStats;
+  recentDonations: Donation[];
+}
+
+/** Fields sent in PUT /devotees/:id body. */
+export interface UpdateDevoteePayload {
+  name?: string;
+  email?: string;
+  city?: string;
+  state?: string;
+  gotra?: string;
+  pan?: string;
 }
 
 export interface DevoteeHistory {
@@ -75,5 +112,17 @@ export function useDevoteeHistory(id: string | null) {
     queryKey: devoteeKeys.history(id ?? ''),
     queryFn: () => apiGet<DevoteeHistory>(`/devotees/${id}/history`),
     enabled: id !== null,
+  });
+}
+
+export function useUpdateDevotee() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateDevoteePayload }) =>
+      apiPut<DevoteeDetail>(`/devotees/${id}`, payload),
+    onSuccess: (_data, { id }) => {
+      void queryClient.invalidateQueries({ queryKey: devoteeKeys.detail(id) });
+      void queryClient.invalidateQueries({ queryKey: devoteeKeys.all });
+    },
   });
 }
