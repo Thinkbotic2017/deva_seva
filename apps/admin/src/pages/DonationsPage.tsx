@@ -231,6 +231,15 @@ export function DonationsPage() {
         </div>
         <div className="flex-1 min-w-[160px]">
           <Select
+            label="Category"
+            options={categoryOptions}
+            placeholder="All categories"
+            value={filters.categoryId ?? ''}
+            onChange={(e) => setFilter('categoryId', e.target.value || undefined)}
+          />
+        </div>
+        <div className="flex-1 min-w-[160px]">
+          <Select
             label="Status"
             options={STATUS_OPTIONS}
             placeholder="All statuses"

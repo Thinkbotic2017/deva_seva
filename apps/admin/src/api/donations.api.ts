@@ -65,6 +65,7 @@ export interface DonationFilters {
   limit?: number;
   fromDate?: string;
   toDate?: string;
+  categoryId?: string;
   mode?: string;
   status?: string;
   search?: string;
