@@ -195,20 +195,25 @@ export class DashboardService {
    * columns (no time component), string comparison is exact.
    */
   private istDates(): { todayIST: string; monthStartIST: string } {
-    // Shift current UTC instant to IST by adding 5h 30m
-    const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
-
-    const yyyy = nowIST.getUTCFullYear();
-    const mm   = String(nowIST.getUTCMonth() + 1).padStart(2, '0');
-    const dd   = String(nowIST.getUTCDate()).padStart(2, '0');
-
-    return {
-      todayIST:      `${yyyy}-${mm}-${dd}`,
-      monthStartIST: `${yyyy}-${mm}-01`,
-    };
+    // Date.now() is always UTC epoch ms, regardless of OS timezone.
+    // Adding IST offset (+5:30) and reading getUTC* gives correct IST wall-clock date.
+    const d = new Date(Date.now() + (5 * 60 + 30) * 60 * 1000);
+    const yyyy = d.getUTCFullYear();
+    const mm   = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const dd   = String(d.getUTCDate()).padStart(2, '0');
+    return { todayIST: `${yyyy}-${mm}-${dd}`, monthStartIST: `${yyyy}-${mm}-01` };
   }
 
-  /** SQL SUM + COUNT for today's confirmed donations (IST date). */
+  /**
+   * SQL SUM + COUNT for today's confirmed donations (IST date).
+   *
+   * The parameter is explicitly cast to ::date in the SQL so PostgreSQL
+   * resolves the operator as  date = date  rather than  date = text (or
+   * date = timestamptz).  Without the cast, node-postgres may bind the
+   * string as timestamptz, causing PostgreSQL to upcast the date column
+   * using the session timezone — which breaks the equality when the DB
+   * session runs in IST (UTC+5:30) instead of UTC.
+   */
   private async queryTodayDonations(
     templeId: string,
   ): Promise<{ count: string; total: string }> {
@@ -219,7 +224,7 @@ export class DashboardService {
       .select('COUNT(d.id)', 'count')
       .addSelect('COALESCE(SUM(d.amount::numeric), 0)', 'total')
       .where('d.temple_id = :templeId', { templeId })
-      .andWhere('d.payment_date = :today', { today: todayIST })
+      .andWhere('d.payment_date = :today::date', { today: todayIST })
       .andWhere('d.status IN (:...statuses)', { statuses: CONFIRMED_STATUSES })
       .andWhere('d.deleted_at IS NULL')
       .getRawOne<{ count: string; total: string }>();
@@ -236,7 +241,7 @@ export class DashboardService {
       .createQueryBuilder('d')
       .select('COALESCE(SUM(d.amount::numeric), 0)', 'total')
       .where('d.temple_id = :templeId', { templeId })
-      .andWhere('d.payment_date >= :monthStart', { monthStart: monthStartIST })
+      .andWhere('d.payment_date >= :monthStart::date', { monthStart: monthStartIST })
       .andWhere('d.status IN (:...statuses)', { statuses: CONFIRMED_STATUSES })
       .andWhere('d.deleted_at IS NULL')
       .getRawOne<{ total: string }>();
@@ -251,7 +256,7 @@ export class DashboardService {
       .createQueryBuilder('sb')
       .where('sb.temple_id = :templeId', { templeId })
       .andWhere('sb.status IN (:...statuses)', { statuses: PENDING_SEVA_STATUSES })
-      .andWhere('sb.seva_date >= :today', { today: todayIST })
+      .andWhere('sb.seva_date >= :today::date', { today: todayIST })
       .andWhere('sb.deleted_at IS NULL')
       .getCount();
   }

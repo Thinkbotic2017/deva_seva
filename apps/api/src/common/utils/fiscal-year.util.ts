@@ -11,28 +11,32 @@ import { Injectable } from '@nestjs/common';
  * conversion, a UTC server would compute March for what is April 1 IST,
  * stamping donations with the wrong fiscal year on legal 80G receipts.
  *
- * Fix: all calculations use the IST wall-clock date, derived via
- * Intl.DateTimeFormat to avoid a third-party timezone library dependency.
+ * Fix: all calculations use the IST wall-clock date derived via the
+ * Intl API (timeZone: 'Asia/Kolkata') — correct on any server timezone.
  *
  * Examples (IST dates):
  *   2025-03-31 → '2024-25'
  *   2025-04-01 → '2025-26'
  */
 
-/** IST offset in milliseconds: +5 hours 30 minutes. */
-const IST_OFFSET_MS = (5 * 60 + 30) * 60 * 1000;
-
 /** Validated fiscal year format: YYYY-YY e.g. '2025-26'. */
 const FISCAL_YEAR_REGEX = /^\d{4}-\d{2}$/;
 
-/** Converts a UTC Date to the IST wall-clock date components. */
-function toIstComponents(date: Date): { year: number; month: number } {
-  const istMs = date.getTime() + IST_OFFSET_MS;
-  const istDate = new Date(istMs);
-  return {
-    year: istDate.getUTCFullYear(),
-    month: istDate.getUTCMonth() + 1, // 1-indexed
-  };
+/**
+ * Converts any Date to the IST wall-clock date components using the
+ * Intl API with an explicit timeZone option — correct on any server
+ * timezone (UTC, IST, etc.) without manual offset arithmetic.
+ */
+function toIstComponents(date: Date): { year: number; month: number; day: number } {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+
+  const get = (type: string) => parseInt(parts.find((p) => p.type === type)!.value, 10);
+  return { year: get('year'), month: get('month'), day: get('day') };
 }
 
 @Injectable()
@@ -69,11 +73,9 @@ export class FiscalYearUtil {
    * capture timestamp) and need to store it as a date column without UTC shift.
    */
   toIstDateString(date: Date): string {
-    const { year, month } = toIstComponents(date);
-    const istMs = date.getTime() + IST_OFFSET_MS;
-    const istDate = new Date(istMs);
-    const dd = String(istDate.getUTCDate()).padStart(2, '0');
+    const { year, month, day } = toIstComponents(date);
     const mm = String(month).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
     return `${year}-${mm}-${dd}`;
   }
 
