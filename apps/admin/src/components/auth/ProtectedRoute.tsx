@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth.store';
 
 interface ProtectedRouteProps {
@@ -29,6 +29,7 @@ interface ProtectedRouteProps {
  */
 export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) {
   const { user, isReady } = useAuthStore();
+  const { pathname } = useLocation();
 
   // Only block on isReady for the outer auth wrapper (Mode 1).
   // By the time Mode 2 role guards render, isReady is always true.
@@ -42,6 +43,16 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // SUPER_ADMIN has no temple — always send them to /superadmin.
+  if (user.role === 'SUPER_ADMIN' && !pathname.startsWith('/superadmin')) {
+    return <Navigate to="/superadmin" replace />;
+  }
+
+  // Temple-scoped roles must never reach /superadmin.
+  if (user.role !== 'SUPER_ADMIN' && pathname.startsWith('/superadmin')) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {

@@ -15,14 +15,13 @@ import { InviteUserDto } from './dto/invite-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
 
-/** Roles that cannot be assigned via the invite/updateRole endpoints. */
-const PROTECTED_ROLES: UserRole[] = [UserRole.SUPER_ADMIN];
-
 /**
  * UsersService manages temple staff: invitations, role changes, and deactivation.
  *
  * Security invariants:
  * - templeId ALWAYS comes from the method parameter (decoded from JWT). Never from dto.
+ * - SUPER_ADMIN cannot call inviteUser() — they have no templeId and manage temples,
+ *   not users. Use SuperAdminService.inviteTempleAdmin() to onboard the first admin.
  * - SUPER_ADMIN role cannot be assigned via inviteUser() or updateRole().
  * - A user cannot deactivate themselves (requestingUserId !== userId).
  * - Phone uniqueness is scoped per temple — same phone can exist in different temples.
@@ -41,18 +40,36 @@ export class UsersService {
    *
    * The invited user authenticates via OTP on first login — no password.
    * Throws ConflictException if a user with the same phone already exists in this temple.
-   * Throws UnprocessableEntityException if SUPER_ADMIN role is requested.
+   * Throws ForbiddenException if the caller is a SUPER_ADMIN (wrong flow).
    *
-   * @param templeId   From JWT — never from request body.
-   * @param dto        Invite payload.
-   * @param invitedBy  userId of the ADMIN issuing the invite.
+   * @param templeId    From JWT — never from request body.
+   * @param dto         Invite payload.
+   * @param invitedBy   userId of the ADMIN issuing the invite.
+   * @param callerRole  Role of the user making the request (from JWT).
    */
   async inviteUser(
     templeId: string,
     dto: InviteUserDto,
     invitedBy: string,
+    callerRole: UserRole,
   ): Promise<User> {
-    if (PROTECTED_ROLES.includes(dto.role)) {
+    // SUPER_ADMIN has no temple_id — they must use the temple onboarding flow.
+    if (callerRole === UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException(
+        'Super Admin cannot invite temple users. Use the temple onboarding flow.',
+      );
+    }
+
+    // templeId must be present — all temple-scoped roles must have one.
+    if (!templeId) {
+      throw new UnprocessableEntityException(
+        'templeId is required for inviting a user',
+      );
+    }
+
+    // Belt-and-suspenders: SUPER_ADMIN must not slip through via DTO either.
+    // The DTO's @IsIn() already blocks it, but this is a defence-in-depth check.
+    if ((dto.role as string) === UserRole.SUPER_ADMIN) {
       throw new UnprocessableEntityException(
         `Role '${dto.role}' cannot be assigned via invite`,
       );
@@ -69,17 +86,18 @@ export class UsersService {
     }
 
     const user = this.userRepo.create({
-      templeId,                // Always from parameter — never from dto
+      templeId,            // Always from parameter — never from dto
       fullName: dto.fullName,
       phone: dto.phone,
-      role: dto.role,
+      email: dto.email,
+      role: dto.role as unknown as UserRole,
       isActive: true,
       invitedBy,
     });
 
     const saved = await this.userRepo.save(user);
     this.logger.log(
-      `User invited: phone=${dto.phone} role=${dto.role} temple=${templeId}`,
+      `User invited: phone=${dto.phone} role=${dto.role} temple=${templeId} by=${invitedBy}`,
     );
     return saved;
   }
@@ -130,7 +148,9 @@ export class UsersService {
     userId: string,
     dto: UpdateUserRoleDto,
   ): Promise<User> {
-    if (PROTECTED_ROLES.includes(dto.role)) {
+    // SUPER_ADMIN cannot be assigned — @IsIn() in the DTO already blocks it,
+    // but this is a defence-in-depth guard.
+    if ((dto.role as string) === UserRole.SUPER_ADMIN) {
       throw new UnprocessableEntityException(
         `Role '${dto.role}' cannot be assigned`,
       );
@@ -143,12 +163,12 @@ export class UsersService {
       throw new NotFoundException(`User ${userId} not found`);
     }
 
-    await this.userRepo.update(userId, { role: dto.role });
+    await this.userRepo.update(userId, { role: dto.role as unknown as UserRole });
     this.logger.log(
       `User ${userId} role changed to ${dto.role} in temple ${templeId}`,
     );
 
-    return { ...user, role: dto.role };
+    return { ...user, role: dto.role as unknown as UserRole };
   }
 
   /**

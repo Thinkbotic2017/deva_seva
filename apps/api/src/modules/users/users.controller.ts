@@ -27,6 +27,9 @@ import { ListUsersQueryDto } from './dto/list-users-query.dto';
  * Route prefix: /api/v1/users
  * All routes require a valid JWT.
  * templeId always comes from req.user.templeId (JWT) — never from params or body.
+ *
+ * SUPER_ADMIN is intentionally excluded from temple-scoped user operations.
+ * SUPER_ADMIN manages temples via /superadmin/*, not staff via /users/*.
  */
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -35,25 +38,25 @@ export class UsersController {
 
   /**
    * POST /users/invite
-   * Invites a new staff member to the temple.
-   * SUPER_ADMIN and ADMIN only.
+   * Invites a new staff member to the calling user's temple.
+   * ADMIN only — SUPER_ADMIN must use POST /superadmin/temples/:id/invite-admin.
    */
   @Post('invite')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.ADMIN)
   async inviteUser(
     @CurrentUser() user: JwtPayload,
     @Body() dto: InviteUserDto,
   ): Promise<User> {
-    return this.usersService.inviteUser(user.templeId, dto, user.sub);
+    return this.usersService.inviteUser(user.templeId, dto, user.sub, user.role);
   }
 
   /**
    * GET /users
    * Lists all staff members of the temple with pagination.
-   * SUPER_ADMIN, ADMIN, and ACCOUNTANT can view the staff list.
+   * ADMIN and ACCOUNTANT can view the staff list.
    */
   @Get()
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.ACCOUNTANT)
+  @Roles(UserRole.ADMIN, UserRole.ACCOUNTANT)
   async listUsers(
     @CurrentUser() user: JwtPayload,
     @Query() query: ListUsersQueryDto,
@@ -63,11 +66,11 @@ export class UsersController {
 
   /**
    * PATCH /users/:id/role
-   * Changes the role of a staff member.
-   * SUPER_ADMIN and ADMIN only. Cannot assign SUPER_ADMIN.
+   * Changes the role of a staff member within the same temple.
+   * ADMIN only — cannot assign SUPER_ADMIN.
    */
   @Patch(':id/role')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.ADMIN)
   async updateRole(
     @CurrentUser() user: JwtPayload,
     @Param('id') userId: string,
@@ -79,11 +82,11 @@ export class UsersController {
   /**
    * POST /users/:id/deactivate
    * Deactivates a staff member (sets isActive=false).
-   * SUPER_ADMIN and ADMIN only. Cannot deactivate own account.
+   * ADMIN only — cannot deactivate own account.
    */
   @Post(':id/deactivate')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Roles(UserRole.ADMIN)
   async deactivate(
     @CurrentUser() user: JwtPayload,
     @Param('id') userId: string,

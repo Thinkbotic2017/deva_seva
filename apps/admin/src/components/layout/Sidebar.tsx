@@ -8,19 +8,20 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { path: '/dashboard', label: 'Dashboard',  icon: '⊞' },
-  { path: '/donations', label: 'Donations',  icon: '₹' },
-  { path: '/sevas',     label: 'Sevas',      icon: '🪔' },
-  { path: '/devotees',  label: 'Devotees',   icon: '🙏' },
-  { path: '/finance',   label: 'Finance',    icon: '📊' },
-  { path: '/reports',   label: 'Reports',    icon: '📄' },
-  { path: '/users',     label: 'Staff',      icon: '👤' },
-  { path: '/settings',  label: 'Settings',   icon: '⚙' },
+  { path: '/dashboard',  label: 'Dashboard',  icon: '⊞' },
+  { path: '/donations',  label: 'Donations',  icon: '₹' },
+  { path: '/sevas',      label: 'Sevas',      icon: '🪔' },
+  { path: '/devotees',   label: 'Devotees',   icon: '🙏' },
+  { path: '/finance',    label: 'Finance',    icon: '📊' },
+  { path: '/reports',    label: 'Reports',    icon: '📄' },
+  { path: '/users',      label: 'Staff',      icon: '👤' },
+  { path: '/settings',   label: 'Settings',   icon: '⚙' },
+  { path: '/superadmin', label: 'Super Admin', icon: '🛡' },
 ];
 
 /** Paths each role is allowed to see. Unlisted roles fall back to dashboard only. */
 const ROLE_ALLOWED_PATHS: Record<string, string[]> = {
-  SUPER_ADMIN:       ['/dashboard', '/donations', '/sevas', '/devotees', '/finance', '/reports', '/users', '/settings'],
+  SUPER_ADMIN:       ['/superadmin'],
   ADMIN:             ['/dashboard', '/donations', '/sevas', '/devotees', '/finance', '/reports', '/users', '/settings'],
   ACCOUNTANT:        ['/dashboard', '/finance', '/reports'],
   COUNTER_STAFF:     ['/dashboard', '/donations', '/sevas'],

@@ -4,6 +4,17 @@ import { ConfigService } from '@nestjs/config';
 import Razorpay from 'razorpay';
 import { RAZORPAY_PAISE_MULTIPLIER } from '../../common/constants';
 
+/** Shape returned by Razorpay paymentLink.create(). */
+export interface RazorpayPaymentLink {
+  id: string;
+  /** Short URL to send to the customer to complete payment. */
+  short_url: string;
+  status: string;
+  amount: number; // paise
+  currency: string;
+  reference_id: string;
+}
+
 /** Shape returned by Razorpay orders.create(). */
 export interface RazorpayOrder {
   id: string;
@@ -65,6 +76,46 @@ export class RazorpayService {
     })) as RazorpayOrder;
 
     return order;
+  }
+
+  /**
+   * Creates a Razorpay Payment Link (for subscription billing by SUPER_ADMIN).
+   * Returns a short_url the temple admin can open to complete payment.
+   *
+   * @param amountRupees  Amount in INR — converted to paise internally.
+   * @param description   Shown to the payer in the checkout page.
+   * @param referenceId   Correlation ID (e.g. templeId) for reconciliation.
+   * @param notifyEmail   If provided, Razorpay will email the link to this address.
+   */
+  async createPaymentLink(
+    amountRupees: number,
+    description: string,
+    referenceId: string,
+    notifyEmail?: string,
+  ): Promise<RazorpayPaymentLink> {
+    const amountPaise = Math.round(amountRupees * RAZORPAY_PAISE_MULTIPLIER);
+
+    this.logger.log(
+      `Creating Razorpay payment link: ₹${amountRupees} (${amountPaise} paise), ref=${referenceId}`,
+    );
+
+    const payload: Record<string, unknown> = {
+      amount: amountPaise,
+      currency: 'INR',
+      description,
+      reference_id: referenceId,
+      reminder_enable: true,
+    };
+
+    if (notifyEmail) {
+      payload['customer'] = { email: notifyEmail };
+      payload['notify'] = { email: true };
+    }
+
+    // The Razorpay SDK type definitions don't always export paymentLink — cast safely.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const link = await (this.client as any).paymentLink.create(payload);
+    return link as RazorpayPaymentLink;
   }
 
   /**

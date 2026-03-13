@@ -10,6 +10,7 @@ import { FinancePage } from '@/pages/FinancePage';
 import { ReportsPage } from '@/pages/ReportsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { StaffPage } from '@/pages/StaffPage';
+import { SuperAdminPage } from '@/pages/SuperAdminPage';
 import { PublicPortalPage } from '@/pages/public/PublicPortalPage';
 
 /**
@@ -28,7 +29,13 @@ const ROLES_FINANCE = [
   'SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'INVENTORY_MANAGER', 'HEAD_PRIEST', 'TRUSTEE',
 ];
 
-const ROLES_ADMIN_ONLY = ['SUPER_ADMIN', 'ADMIN'];
+const ROLES_ADMIN_ONLY = ['ADMIN'];
+const ROLES_SUPER_ADMIN_ONLY = ['SUPER_ADMIN'];
+
+/** All temple-scoped roles — explicitly excludes SUPER_ADMIN. */
+const ROLES_TEMPLE = [
+  'ADMIN', 'ACCOUNTANT', 'COUNTER_STAFF', 'INVENTORY_MANAGER', 'HEAD_PRIEST', 'PRIEST', 'TRUSTEE',
+];
 
 /**
  * Application router.
@@ -57,7 +64,11 @@ export const router = createBrowserRouter([
           { index: true, element: <Navigate to="/dashboard" replace /> },
           {
             path: 'dashboard',
-            element: <DashboardPage />,
+            element: (
+              <ProtectedRoute allowedRoles={ROLES_TEMPLE}>
+                <DashboardPage />
+              </ProtectedRoute>
+            ),
           },
           {
             path: 'donations',
@@ -112,6 +123,14 @@ export const router = createBrowserRouter([
             element: (
               <ProtectedRoute allowedRoles={ROLES_ADMIN_ONLY}>
                 <SettingsPage />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: 'superadmin',
+            element: (
+              <ProtectedRoute allowedRoles={ROLES_SUPER_ADMIN_ONLY}>
+                <SuperAdminPage />
               </ProtectedRoute>
             ),
           },

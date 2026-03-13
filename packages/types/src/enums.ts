@@ -150,6 +150,13 @@ export enum NotificationStatus {
   FAILED = 'FAILED',
 }
 
+export enum BillingCycle {
+  MONTHLY = 'MONTHLY',
+  QUARTERLY = 'QUARTERLY',
+  HALF_YEARLY = 'HALF_YEARLY',
+  YEARLY = 'YEARLY',
+}
+
 export enum AuditAction {
   CREATE = 'CREATE',
   UPDATE = 'UPDATE',

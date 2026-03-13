@@ -42,7 +42,7 @@ export function LoginPage() {
       verifyOtp(sessionId, otpCode),
     onSuccess: (result) => {
       setUser(result.user);
-      navigate('/dashboard', { replace: true });
+      navigate(result.user.role === 'SUPER_ADMIN' ? '/superadmin' : '/dashboard', { replace: true });
     },
     onError: (err: unknown) => {
       const message = err instanceof Error ? err.message : 'Invalid OTP. Please try again.';

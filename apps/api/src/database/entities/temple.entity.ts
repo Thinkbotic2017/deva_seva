@@ -118,4 +118,31 @@ export class Temple extends BaseEntity {
 
   @Column({ name: 'primary_language', type: 'varchar', length: 5, default: 'hi' })
   primaryLanguage: string;
+
+  // ── Membership / billing fields ────────────────────────────────────────────
+
+  /** FK to membership_plans.id — which plan tier this temple is subscribed to. */
+  @Column({ name: 'plan_id', type: 'uuid', nullable: true })
+  planId?: string;
+
+  @Column({ name: 'plan_billing_cycle', type: 'varchar', nullable: true })
+  planBillingCycle?: string;
+
+  /** Subscription amount paid in INR. TypeORM returns decimal as string. */
+  @Column({ name: 'plan_amount', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  planAmount?: string;
+
+  /** Razorpay payment link or payment ID recorded at billing time. */
+  @Column({ name: 'plan_razorpay_payment_id', type: 'varchar', nullable: true })
+  planRazorpayPaymentId?: string;
+
+  @Column({ name: 'plan_auto_renew', type: 'boolean', default: false })
+  planAutoRenew: boolean;
+
+  @Column({ name: 'last_payment_at', type: 'timestamptz', nullable: true })
+  lastPaymentAt?: Date;
+
+  /** Set when temple is suspended. Cleared on re-activation. */
+  @Column({ name: 'suspension_reason', type: 'varchar', nullable: true })
+  suspensionReason?: string;
 }
