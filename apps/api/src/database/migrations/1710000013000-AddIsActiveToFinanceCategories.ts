@@ -6,7 +6,7 @@ export class AddIsActiveToFinanceCategories1710000013000 implements MigrationInt
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       ALTER TABLE "finance_categories"
-        ADD COLUMN "is_active" boolean NOT NULL DEFAULT true
+        ADD COLUMN IF NOT EXISTS "is_active" boolean NOT NULL DEFAULT true
     `);
   }
 

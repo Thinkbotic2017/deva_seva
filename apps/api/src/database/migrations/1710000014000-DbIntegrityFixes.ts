@@ -31,11 +31,6 @@ export class DbIntegrityFixes1710000014000 implements MigrationInterface {
         ADD CONSTRAINT chk_seva_bookings_amount_positive CHECK (amount > 0)
     `);
 
-    await queryRunner.query(`
-      ALTER TABLE inventory_transactions
-        ADD CONSTRAINT chk_inventory_transactions_quantity_positive CHECK (quantity > 0)
-    `);
-
     // ── 3. Trigram indexes ────────────────────────────────────────────────────
     await queryRunner.query(`
       CREATE INDEX idx_devotees_name_trgm
@@ -76,11 +71,6 @@ export class DbIntegrityFixes1710000014000 implements MigrationInterface {
     await queryRunner.query(`DROP INDEX IF EXISTS idx_donations_donor_name_trgm`);
     await queryRunner.query(`DROP INDEX IF EXISTS idx_devotees_phone_trgm`);
     await queryRunner.query(`DROP INDEX IF EXISTS idx_devotees_name_trgm`);
-
-    await queryRunner.query(`
-      ALTER TABLE inventory_transactions
-        DROP CONSTRAINT IF EXISTS chk_inventory_transactions_quantity_positive
-    `);
 
     await queryRunner.query(`
       ALTER TABLE seva_bookings
