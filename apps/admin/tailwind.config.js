@@ -1,24 +1,62 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        // ── Admin dark theme ──────────────────────────────────────────────
-        background: '#0F0F0F',  // page background
-        surface:    '#1A1A1A',  // card / sidebar background
-        'surface-2': '#242424', // elevated surface (hover states, nested)
-        border:     '#2E2E2E',  // default border
-        primary: {
-          DEFAULT: '#FF6B35',   // CTA buttons — one per screen
-          hover:   '#E8530A',   // hover state (saffron-500 from CLAUDE.md)
-          subtle:  '#3D1A0A',   // background tint for primary areas
+        // ── Semantic tokens — consumed from CSS custom properties in index.css ──
+        // Light and dark values are set via :root / .dark in index.css.
+        // Tailwind classes (bg-bg-page, text-text-primary, etc.) resolve through
+        // these hsl(var(--token)) references — never hardcode hex/rgb here.
+
+        // Backgrounds
+        'bg-page':     'hsl(var(--bg-page))',
+        'bg-surface':  'hsl(var(--bg-surface))',
+        'bg-surface-2':'hsl(var(--bg-surface-2))',
+        'bg-surface-3':'hsl(var(--bg-surface-3))',
+
+        // Borders
+        'border-subtle':  'hsl(var(--border-subtle))',
+        'border-default': 'hsl(var(--border-default))',
+        'border-strong':  'hsl(var(--border-strong))',
+
+        // Text
+        'text-primary':   'hsl(var(--text-primary))',
+        'text-secondary': 'hsl(var(--text-secondary))',
+        'text-muted':     'hsl(var(--text-muted))',
+        'text-inverse':   'hsl(var(--text-inverse))',
+
+        // Brand (saffron-based per CLAUDE.md)
+        'brand-primary':       'hsl(var(--brand-primary))',
+        'brand-primary-hover': 'hsl(var(--brand-primary-hover))',
+        'brand-primary-subtle':'hsl(var(--brand-primary-subtle))',
+        'brand-primary-fg':    'hsl(var(--brand-primary-fg))',
+
+        // Semantic states
+        success: {
+          DEFAULT: 'hsl(var(--success))',
+          subtle:  'hsl(var(--success-subtle))',
+          fg:      'hsl(var(--success-fg))',
         },
-        // ── Text ─────────────────────────────────────────────────────────
-        'text-primary':   '#F5F5F5', // headings, important labels
-        'text-secondary': '#A0A0A0', // supporting text
-        'text-muted':     '#606060', // captions, timestamps
-        // ── CLAUDE.md saffron tokens (kept for shared use) ───────────────
+        warning: {
+          DEFAULT: 'hsl(var(--warning))',
+          subtle:  'hsl(var(--warning-subtle))',
+          fg:      'hsl(var(--warning-fg))',
+        },
+        danger: {
+          DEFAULT: 'hsl(var(--danger))',
+          subtle:  'hsl(var(--danger-subtle))',
+          fg:      'hsl(var(--danger-fg))',
+        },
+        info: {
+          DEFAULT: 'hsl(var(--info))',
+          subtle:  'hsl(var(--info-subtle))',
+          fg:      'hsl(var(--info-fg))',
+        },
+
+        // ── Static palette tokens (no dark-mode variant) ──────────────────────
+        // Use only when you need a fixed colour regardless of theme.
         saffron: {
           50:  '#FDE8D8',
           500: '#E8530A',
@@ -29,15 +67,12 @@ export default {
           50:  '#FFF5CC',
           400: '#C49A00',
         },
-        // ── Semantic ─────────────────────────────────────────────────────
-        success: '#22C55E',
-        warning: '#F59E0B',
-        danger:  '#EF4444',
-        info:    '#3B82F6',
       },
+
       fontFamily: {
         sans: ['Noto Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
       },
+
       borderRadius: {
         xs:   '2px',
         sm:   '4px',
@@ -47,6 +82,7 @@ export default {
         '2xl': '24px',
         full: '9999px',
       },
+
       fontSize: {
         display: ['40px', { lineHeight: '1.1', fontWeight: '700' }],
         h1:      ['28px', { lineHeight: '1.2', fontWeight: '700' }],
@@ -56,15 +92,24 @@ export default {
         caption: ['12px', { lineHeight: '1.4', fontWeight: '400' }],
         label:   ['14px', { lineHeight: '1.4', fontWeight: '500' }],
       },
+
       boxShadow: {
-        card: '0 1px 3px 0 rgba(0,0,0,0.4), 0 1px 2px -1px rgba(0,0,0,0.4)',
-        glow: '0 0 0 3px rgba(255, 107, 53, 0.35)',
+        card:  '0 1px 3px 0 rgba(0,0,0,0.08), 0 1px 2px -1px rgba(0,0,0,0.06)',
+        'card-dark': '0 1px 3px 0 rgba(0,0,0,0.4), 0 1px 2px -1px rgba(0,0,0,0.4)',
+        glow:  '0 0 0 3px hsl(var(--brand-primary) / 0.35)',
+        modal: '0 20px 60px -10px rgba(0,0,0,0.3)',
       },
+
+      transitionProperty: {
+        colors: 'color, background-color, border-color, text-decoration-color, fill, stroke',
+      },
+
       animation: {
-        'fade-in': 'fadeIn 0.2s ease-out',
+        'fade-in':  'fadeIn 0.2s ease-out',
         'slide-up': 'slideUp 0.25s ease-out',
-        shake: 'shake 0.4s ease-in-out',
+        shake:      'shake 0.4s ease-in-out',
       },
+
       keyframes: {
         fadeIn: {
           from: { opacity: '0' },

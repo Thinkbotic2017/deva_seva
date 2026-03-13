@@ -5,8 +5,13 @@ import { RouterProvider } from 'react-router-dom';
 import { queryClient } from './lib/query-client';
 import { router } from './routes/router';
 import { setAccessToken, useAuthStore } from './store/auth.store';
+import { initTheme } from './store/theme.store';
 import { apiPost } from './lib/api-client';
 import './index.css';
+
+// Apply the stored theme class to <html> before React renders to prevent
+// a flash of the wrong theme (FOWT). Must run synchronously before paint.
+initTheme();
 
 interface RefreshResponse {
   accessToken: string;

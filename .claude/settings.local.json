@@ -20,7 +20,8 @@
       "Bash(npx tsc:*)",
       "Bash(npx jest:*)",
       "Bash(pnpm install:*)",
-      "Bash(find \"D:\\\\Software\\\\deva_seva\\\\apps\\\\api\\\\src\\\\modules\" -type d -name \"*user*\" -o -type d -name \"*staff*\" 2>/dev/null | head -20)"
+      "Bash(find \"D:\\\\Software\\\\deva_seva\\\\apps\\\\api\\\\src\\\\modules\" -type d -name \"*user*\" -o -type d -name \"*staff*\" 2>/dev/null | head -20)",
+      "Bash(cd \"D:\\\\Software\\\\deva_seva\\\\apps\\\\admin\\\\src\\\\pages\" && sed -i \\\\\n  -e \"s/border-b border-border\\\\b/border-b border-border-subtle/g\" \\\\\n  -e \"s/border-t border-border\\\\b/border-t border-border-subtle/g\" \\\\\n  -e \"s/border border-border\\\\b/border border-border-subtle/g\" \\\\\n  -e \"s/bg-surface-2\\\\b/bg-bg-surface-2/g\" \\\\\n  -e \"s/ bg-surface\\\\b/ bg-bg-surface/g\" \\\\\n  DevoteesPage.tsx)"
     ]
   }
 }

@@ -14,10 +14,10 @@ import {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function todayIST(): string {
-  const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+  const nowIST = new Date(Date.now() + (5 * 60 + 30) * 60 * 1000);
   const yyyy = nowIST.getUTCFullYear();
-  const mm = String(nowIST.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(nowIST.getUTCDate()).padStart(2, '0');
+  const mm   = String(nowIST.getUTCMonth() + 1).padStart(2, '0');
+  const dd   = String(nowIST.getUTCDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
 }
 
@@ -28,10 +28,9 @@ function formatDateString(dateStr: string): string {
   });
 }
 
-/** Returns the first and last day of the current calendar month in IST. */
 function currentMonthRange(): { from: string; to: string } {
-  const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
-  const year = nowIST.getUTCFullYear();
+  const nowIST = new Date(Date.now() + (5 * 60 + 30) * 60 * 1000);
+  const year  = nowIST.getUTCFullYear();
   const month = nowIST.getUTCMonth();
   const firstDay = new Date(Date.UTC(year, month, 1));
   const lastDay  = new Date(Date.UTC(year, month + 1, 0));
@@ -45,11 +44,7 @@ const { from: defaultFrom, to: defaultTo } = currentMonthRange();
 type EntryFormState = Omit<CreateLedgerEntryDto, 'type'>;
 
 function emptyForm(): EntryFormState {
-  return {
-    amount: 0,
-    description: '',
-    entryDate: todayIST(),
-  };
+  return { amount: 0, description: '', entryDate: todayIST() };
 }
 
 // ─── Loading skeleton ─────────────────────────────────────────────────────────
@@ -58,10 +53,13 @@ function TableSkeleton() {
   return (
     <tbody>
       {Array.from({ length: 8 }).map((_, i) => (
-        <tr key={i} className="border-b border-border">
+        <tr key={i} className="border-b border-border-subtle">
           {Array.from({ length: 5 }).map((_, j) => (
             <td key={j} className="px-4 py-3">
-              <div className="h-4 bg-surface-2 rounded animate-pulse" style={{ width: `${55 + (j * 15) % 45}%` }} />
+              <div
+                className="h-4 bg-bg-surface-2 rounded animate-pulse"
+                style={{ width: `${55 + (j * 15) % 45}%` }}
+              />
             </td>
           ))}
         </tr>
@@ -73,38 +71,32 @@ function TableSkeleton() {
 // ─── Summary card ─────────────────────────────────────────────────────────────
 
 function SummaryCard({
-  label, value, color, loading,
+  label, value, colorClass, loading,
 }: {
   label: string;
   value: string | number | undefined;
-  color: string;
+  colorClass: string;
   loading: boolean;
 }) {
   return (
-    <div className="rounded-lg bg-surface border border-border p-5">
+    <div className="rounded-lg bg-bg-surface border border-border-subtle p-5">
       <p className="text-caption text-text-secondary uppercase tracking-wide font-medium">{label}</p>
       {loading ? (
-        <div className="mt-2 h-8 w-28 bg-surface-2 rounded animate-pulse" />
+        <div className="mt-2 h-8 w-28 bg-bg-surface-2 rounded animate-pulse" />
       ) : (
-        <p className={`mt-1 text-h2 font-bold ${color}`}>
+        <p className={`mt-1 text-h2 font-bold ${colorClass}`}>
           ₹{typeof value === 'string'
-              ? parseFloat(value).toLocaleString('en-IN')
-              : (value ?? 0).toLocaleString('en-IN')}
+            ? parseFloat(value).toLocaleString('en-IN')
+            : (value ?? 0).toLocaleString('en-IN')}
         </p>
       )}
     </div>
   );
 }
 
-// ─── Entry form (shared for income and expense) ───────────────────────────────
+// ─── Entry form ───────────────────────────────────────────────────────────────
 
-function EntryForm({
-  type,
-  onClose,
-}: {
-  type: 'INCOME' | 'EXPENSE';
-  onClose: () => void;
-}) {
+function EntryForm({ type, onClose }: { type: 'INCOME' | 'EXPENSE'; onClose: () => void }) {
   const [form, setForm] = useState<EntryFormState>(emptyForm());
   const [errors, setErrors] = useState<Partial<Record<keyof EntryFormState, string>>>({});
 
@@ -112,7 +104,6 @@ function EntryForm({
   const createExpense = useCreateExpense();
   const createIncome  = useCreateIncome();
   const mutation = type === 'EXPENSE' ? createExpense : createIncome;
-
   const categoryOptions = categories.map((c) => ({ value: c.id, label: c.name }));
 
   function setField<K extends keyof EntryFormState>(key: K, value: EntryFormState[K]) {
@@ -137,17 +128,12 @@ function EntryForm({
       ...(form.categoryId ? { categoryId: form.categoryId } : {}),
       ...(form.notes ? { notes: form.notes } : {}),
     };
-    mutation.mutate(dto, {
-      onSuccess: () => {
-        setForm(emptyForm());
-        onClose();
-      },
-    });
+    mutation.mutate(dto, { onSuccess: () => { setForm(emptyForm()); onClose(); } });
   }
 
   return (
     <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Input
           label="Amount (₹) *"
           type="number"
@@ -184,10 +170,10 @@ function EntryForm({
       />
 
       {mutation.isError && (
-        <p className="text-caption text-danger">Failed to save. Please try again.</p>
+        <p className="text-caption text-danger-DEFAULT">Failed to save. Please try again.</p>
       )}
 
-      <div className="flex gap-3 pt-2 border-t border-border">
+      <div className="flex gap-3 pt-2 border-t border-border-subtle">
         <Button type="button" variant="ghost" className="flex-1" onClick={onClose}>
           Cancel
         </Button>
@@ -204,12 +190,8 @@ function EntryForm({
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Category cell ────────────────────────────────────────────────────────────
 
-type ModalType = 'INCOME' | 'EXPENSE' | null;
-type SourceFilter = '' | 'manual' | 'donation' | 'seva';
-
-/** Returns what to display in the Category column for a single ledger row. */
 function CategoryCell({
   entry,
   categoryMap,
@@ -220,14 +202,14 @@ function CategoryCell({
   if (entry.isAutoPosted) {
     if (entry.donationId) {
       return (
-        <span className="px-2 py-0.5 rounded-full text-caption font-medium bg-primary/10 text-primary">
+        <span className="px-2 py-0.5 rounded-full text-caption font-medium bg-brand-primary/10 text-brand-primary">
           Donation
         </span>
       );
     }
     if (entry.sevaBookingId) {
       return (
-        <span className="px-2 py-0.5 rounded-full text-caption font-medium bg-info/10 text-info">
+        <span className="px-2 py-0.5 rounded-full text-caption font-medium bg-info-subtle text-info-fg">
           Seva Booking
         </span>
       );
@@ -235,7 +217,7 @@ function CategoryCell({
     return <span className="text-text-muted">—</span>;
   }
   if (entry.categoryId && categoryMap[entry.categoryId]) {
-    const { name, color } = categoryMap[entry.categoryId];
+    const { name, color } = categoryMap[entry.categoryId]!;
     return (
       <span
         className="px-2 py-0.5 rounded-full text-caption font-medium"
@@ -247,6 +229,44 @@ function CategoryCell({
   }
   return <span className="text-text-muted">—</span>;
 }
+
+// ─── Mobile ledger row card ───────────────────────────────────────────────────
+
+function LedgerCard({
+  entry,
+  categoryMap,
+}: {
+  entry: LedgerEntry;
+  categoryMap: Record<string, { name: string; color?: string }>;
+}) {
+  return (
+    <div className="p-4 border-b border-border-subtle last:border-0">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-label text-text-primary truncate">{entry.description}</p>
+          {entry.isAutoPosted && (
+            <p className="text-caption text-text-muted">Auto-posted</p>
+          )}
+        </div>
+        <span className={`text-label font-semibold flex-shrink-0 ${
+          entry.type === 'INCOME' ? 'text-success-DEFAULT' : 'text-danger-DEFAULT'
+        }`}>
+          {entry.type === 'EXPENSE' ? '−' : '+'}₹{parseFloat(entry.amount).toLocaleString('en-IN')}
+        </span>
+      </div>
+      <div className="flex items-center gap-2 flex-wrap mt-2">
+        <Badge label={entry.type} variant={entry.type === 'INCOME' ? 'success' : 'danger'} />
+        <CategoryCell entry={entry} categoryMap={categoryMap} />
+        <span className="text-caption text-text-muted">{formatDateString(entry.entryDate)}</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+type ModalType = 'INCOME' | 'EXPENSE' | null;
+type SourceFilter = '' | 'manual' | 'donation' | 'seva';
 
 export function FinancePage() {
   const [filters, setFilters] = useState<LedgerFilters>({
@@ -260,7 +280,7 @@ export function FinancePage() {
     filters.fromDate ?? defaultFrom,
     filters.toDate ?? defaultTo,
   );
-  const { data: incomeCategories = [] } = useFinanceCategories('INCOME');
+  const { data: incomeCategories  = [] } = useFinanceCategories('INCOME');
   const { data: expenseCategories = [] } = useFinanceCategories('EXPENSE');
 
   const categoryMap: Record<string, { name: string; color?: string }> = {};
@@ -278,11 +298,12 @@ export function FinancePage() {
       });
 
   const meta = data?.meta;
+  const netBalance = summary ? parseFloat(summary.netBalance) : 0;
 
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-h1 font-bold text-text-primary">Finance</h1>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => setOpenModal('INCOME')}>
@@ -299,29 +320,25 @@ export function FinancePage() {
         <SummaryCard
           label="Total Income"
           value={summary?.totalIncome}
-          color="text-success"
+          colorClass="text-success-DEFAULT"
           loading={summaryLoading}
         />
         <SummaryCard
           label="Total Expense"
           value={summary?.totalExpense}
-          color="text-danger"
+          colorClass="text-danger-DEFAULT"
           loading={summaryLoading}
         />
         <SummaryCard
           label="Net Balance"
           value={summary?.netBalance}
-          color={
-            summary && parseFloat(summary.netBalance) >= 0
-              ? 'text-text-primary'
-              : 'text-danger'
-          }
+          colorClass={netBalance >= 0 ? 'text-text-primary' : 'text-danger-DEFAULT'}
           loading={summaryLoading}
         />
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 rounded-lg bg-surface border border-border p-4">
+      <div className="flex flex-wrap gap-3 rounded-lg bg-bg-surface border border-border-subtle p-4">
         <div className="flex-1 min-w-[140px]">
           <Input
             label="From date"
@@ -375,12 +392,14 @@ export function FinancePage() {
         </div>
       </div>
 
-      {/* Ledger table */}
-      <div className="rounded-lg bg-surface border border-border overflow-hidden">
-        <div className="overflow-x-auto">
+      {/* Ledger */}
+      <div className="rounded-lg bg-bg-surface border border-border-subtle overflow-hidden">
+
+        {/* ── Desktop table ── */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-body">
             <thead>
-              <tr className="border-b border-border bg-surface-2">
+              <tr className="border-b border-border-subtle bg-bg-surface-2">
                 <th className="px-4 py-3 text-left text-caption text-text-muted font-medium uppercase tracking-wide">Date</th>
                 <th className="px-4 py-3 text-left text-caption text-text-muted font-medium uppercase tracking-wide">Description</th>
                 <th className="px-4 py-3 text-left text-caption text-text-muted font-medium uppercase tracking-wide">Category</th>
@@ -394,7 +413,7 @@ export function FinancePage() {
             ) : isError ? (
               <tbody>
                 <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-danger text-body">
+                  <td colSpan={5} className="px-4 py-12 text-center text-danger-DEFAULT text-body">
                     Failed to load ledger. Please try again.
                   </td>
                 </tr>
@@ -410,7 +429,7 @@ export function FinancePage() {
             ) : (
               <tbody>
                 {filteredRows.map((entry) => (
-                  <tr key={entry.id} className="border-b border-border hover:bg-surface-2 transition-colors">
+                  <tr key={entry.id} className="border-b border-border-subtle hover:bg-bg-surface-2 transition-colors">
                     <td className="px-4 py-3 text-caption text-text-muted whitespace-nowrap">
                       {formatDateString(entry.entryDate)}
                     </td>
@@ -420,7 +439,7 @@ export function FinancePage() {
                         <span className="text-caption text-text-muted">Auto-posted</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-body text-text-secondary">
+                    <td className="px-4 py-3">
                       <CategoryCell entry={entry} categoryMap={categoryMap} />
                     </td>
                     <td className="px-4 py-3">
@@ -431,7 +450,7 @@ export function FinancePage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className={`text-label font-semibold ${
-                        entry.type === 'INCOME' ? 'text-success' : 'text-danger'
+                        entry.type === 'INCOME' ? 'text-success-DEFAULT' : 'text-danger-DEFAULT'
                       }`}>
                         {entry.type === 'EXPENSE' ? '−' : '+'}₹{parseFloat(entry.amount).toLocaleString('en-IN')}
                       </span>
@@ -441,6 +460,35 @@ export function FinancePage() {
               </tbody>
             )}
           </table>
+        </div>
+
+        {/* ── Mobile cards ── */}
+        <div className="sm:hidden">
+          {isLoading ? (
+            <div className="divide-y divide-border-subtle">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="p-4 space-y-2">
+                  <div className="flex justify-between">
+                    <div className="h-4 w-40 bg-bg-surface-2 rounded animate-pulse" />
+                    <div className="h-4 w-16 bg-bg-surface-2 rounded animate-pulse" />
+                  </div>
+                  <div className="h-3 w-24 bg-bg-surface-2 rounded animate-pulse" />
+                </div>
+              ))}
+            </div>
+          ) : isError ? (
+            <p className="px-4 py-12 text-center text-danger-DEFAULT text-body">
+              Failed to load ledger. Please try again.
+            </p>
+          ) : filteredRows.length === 0 ? (
+            <p className="px-4 py-12 text-center text-text-muted text-body">
+              No entries found for this period
+            </p>
+          ) : (
+            filteredRows.map((entry) => (
+              <LedgerCard key={entry.id} entry={entry} categoryMap={categoryMap} />
+            ))
+          )}
         </div>
 
         {meta && (
@@ -455,20 +503,12 @@ export function FinancePage() {
       </div>
 
       {/* Income modal */}
-      <Modal
-        isOpen={openModal === 'INCOME'}
-        onClose={() => setOpenModal(null)}
-        title="Add Income Entry"
-      >
+      <Modal isOpen={openModal === 'INCOME'} onClose={() => setOpenModal(null)} title="Add Income Entry">
         <EntryForm key={openModal === 'INCOME' ? 'income-open' : 'income-closed'} type="INCOME" onClose={() => setOpenModal(null)} />
       </Modal>
 
       {/* Expense modal */}
-      <Modal
-        isOpen={openModal === 'EXPENSE'}
-        onClose={() => setOpenModal(null)}
-        title="Add Expense Entry"
-      >
+      <Modal isOpen={openModal === 'EXPENSE'} onClose={() => setOpenModal(null)} title="Add Expense Entry">
         <EntryForm key={openModal === 'EXPENSE' ? 'expense-open' : 'expense-closed'} type="EXPENSE" onClose={() => setOpenModal(null)} />
       </Modal>
     </div>

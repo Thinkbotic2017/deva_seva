@@ -18,14 +18,14 @@ import {
 // ─── Role display config ──────────────────────────────────────────────────────
 
 const ROLE_META: Record<UserRole, { label: string; className: string }> = {
-  SUPER_ADMIN:       { label: 'Super Admin',      className: 'bg-amber-500/10 text-amber-500'   },
-  ADMIN:             { label: 'Admin',            className: 'bg-danger/10 text-danger'         },
-  ACCOUNTANT:        { label: 'Accountant',       className: 'bg-info/10 text-info'             },
-  COUNTER_STAFF:     { label: 'Counter Staff',    className: 'bg-success/10 text-success'       },
-  INVENTORY_MANAGER: { label: 'Inventory Mgr',    className: 'bg-primary/10 text-primary'       },
-  HEAD_PRIEST:       { label: 'Head Priest',      className: 'bg-surface-2 text-text-primary'   },
-  PRIEST:            { label: 'Priest',           className: 'bg-surface-2 text-text-secondary' },
-  TRUSTEE:           { label: 'Trustee',          className: 'bg-surface-2 text-text-muted'     },
+  SUPER_ADMIN:       { label: 'Super Admin',      className: 'bg-warning-subtle text-warning-fg'          },
+  ADMIN:             { label: 'Admin',            className: 'bg-danger-subtle text-danger-fg'            },
+  ACCOUNTANT:        { label: 'Accountant',       className: 'bg-info-subtle text-info-fg'                },
+  COUNTER_STAFF:     { label: 'Counter Staff',    className: 'bg-success-subtle text-success-fg'          },
+  INVENTORY_MANAGER: { label: 'Inventory Mgr',    className: 'bg-brand-primary/10 text-brand-primary'     },
+  HEAD_PRIEST:       { label: 'Head Priest',      className: 'bg-bg-surface-2 text-text-primary'          },
+  PRIEST:            { label: 'Priest',           className: 'bg-bg-surface-2 text-text-secondary'        },
+  TRUSTEE:           { label: 'Trustee',          className: 'bg-bg-surface-2 text-text-muted'            },
 };
 
 /** All roles that can be assigned via invite / role-change (SUPER_ADMIN excluded). */
@@ -44,7 +44,7 @@ const ROLE_OPTIONS: Array<{ value: UserRole; label: string }> = [
 function RoleBadge({ role }: { role: UserRole }) {
   const meta = ROLE_META[role];
   return (
-    <span className={`px-2 py-0.5 rounded-full text-caption font-medium ${meta?.className ?? 'bg-surface-2 text-text-muted'}`}>
+    <span className={`px-2 py-0.5 rounded-full text-caption font-medium ${meta?.className ?? 'bg-bg-surface-2 text-text-muted'}`}>
       {meta?.label ?? role}
     </span>
   );
@@ -54,10 +54,10 @@ function TableSkeleton() {
   return (
     <tbody>
       {Array.from({ length: 6 }).map((_, i) => (
-        <tr key={i} className="border-b border-border">
+        <tr key={i} className="border-b border-border-subtle">
           {Array.from({ length: 5 }).map((_, j) => (
             <td key={j} className="px-4 py-3">
-              <div className="h-4 bg-surface-2 rounded animate-pulse" style={{ width: `${50 + (j * 13) % 40}%` }} />
+              <div className="h-4 bg-bg-surface-2 rounded animate-pulse" style={{ width: `${50 + (j * 13) % 40}%` }} />
             </td>
           ))}
         </tr>
@@ -160,7 +160,7 @@ function InviteModal({
           <p className="text-caption text-danger">Failed to send invite. Please try again.</p>
         )}
 
-        <div className="flex gap-3 pt-2 border-t border-border">
+        <div className="flex gap-3 pt-2 border-t border-border-subtle">
           <Button type="button" variant="ghost" className="flex-1" onClick={handleClose}>
             Cancel
           </Button>
@@ -223,7 +223,7 @@ function EditRoleModal({
           <p className="text-caption text-danger">{error || 'Failed to update role. Please try again.'}</p>
         )}
 
-        <div className="flex gap-3 pt-2 border-t border-border">
+        <div className="flex gap-3 pt-2 border-t border-border-subtle">
           <Button type="button" variant="ghost" className="flex-1" onClick={handleClose}>
             Cancel
           </Button>
@@ -283,7 +283,7 @@ export function StaffPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 rounded-lg bg-surface border border-border p-4">
+      <div className="flex flex-wrap gap-3 rounded-lg bg-bg-surface border border-border-subtle p-4">
         <div className="flex-1 min-w-[160px]">
           <Select
             label="Role"
@@ -314,11 +314,11 @@ export function StaffPage() {
       </div>
 
       {/* Table */}
-      <div className="rounded-lg bg-surface border border-border overflow-hidden">
+      <div className="rounded-lg bg-bg-surface border border-border-subtle overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-body">
             <thead>
-              <tr className="border-b border-border bg-surface-2">
+              <tr className="border-b border-border-subtle bg-bg-surface-2">
                 <th className="px-4 py-3 text-left text-caption text-text-muted font-medium uppercase tracking-wide">Name</th>
                 <th className="px-4 py-3 text-left text-caption text-text-muted font-medium uppercase tracking-wide">Role</th>
                 <th className="px-4 py-3 text-left text-caption text-text-muted font-medium uppercase tracking-wide">Status</th>
@@ -348,7 +348,7 @@ export function StaffPage() {
             ) : (
               <tbody>
                 {rows.map((member) => (
-                  <tr key={member.id} className="border-b border-border hover:bg-surface-2 transition-colors">
+                  <tr key={member.id} className="border-b border-border-subtle hover:bg-bg-surface-2 transition-colors">
                     {/* Name + Phone */}
                     <td className="px-4 py-3">
                       <p className="text-label font-medium text-text-primary">{member.fullName}</p>
@@ -367,7 +367,7 @@ export function StaffPage() {
                           'px-2 py-0.5 rounded-full text-caption font-medium',
                           member.isActive
                             ? 'bg-success/10 text-success'
-                            : 'bg-surface-2 text-text-muted',
+                            : 'bg-bg-surface-2 text-text-muted',
                         ].join(' ')}
                       >
                         {member.isActive ? 'Active' : 'Inactive'}

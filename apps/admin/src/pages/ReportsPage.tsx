@@ -22,7 +22,6 @@ const TABS: { id: Tab; label: string }[] = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Current fiscal year string: '2025-26' */
 function currentFiscalYear(): string {
   const now = new Date();
   const year = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
@@ -30,26 +29,71 @@ function currentFiscalYear(): string {
 }
 
 function currentMonthRange() {
-  const now = new Date();
-  const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-  const to   = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+  const now  = new Date();
+  const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]!;
+  const to   = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]!;
   return { from, to };
 }
 
-const today = new Date().toISOString().split('T')[0];
+const today = new Date().toISOString().split('T')[0]!;
 const { from: defaultFrom, to: defaultTo } = currentMonthRange();
+
+// ─── Shared primitives ────────────────────────────────────────────────────────
+
+function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-lg bg-bg-surface border border-border-subtle overflow-hidden">
+      <div className="px-5 py-3 border-b border-border-subtle bg-bg-surface-2">
+        <h3 className="text-label font-semibold text-text-secondary uppercase tracking-wide">{title}</h3>
+      </div>
+      <div className="px-5 py-4 overflow-x-auto">{children}</div>
+    </div>
+  );
+}
+
+function ReportSkeleton() {
+  return (
+    <div className="rounded-lg bg-bg-surface border border-border-subtle p-5 space-y-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div
+          key={i}
+          className="h-5 bg-bg-surface-2 rounded animate-pulse"
+          style={{ width: `${50 + (i * 17) % 50}%` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ErrorState() {
+  return (
+    <div className="rounded-lg bg-bg-surface border border-border-subtle p-8 text-center text-danger-DEFAULT text-body">
+      Failed to load report data. Please try again.
+    </div>
+  );
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="rounded-lg bg-bg-surface border border-border-subtle p-10 text-center text-text-muted text-body">
+      {message}
+    </div>
+  );
+}
+
+/** Reusable th style */
+const thCls = 'pb-2 text-caption text-text-muted font-medium uppercase';
 
 // ─── Donation Summary tab ─────────────────────────────────────────────────────
 
 function DonationSummaryTab() {
   const [from, setFrom] = useState(defaultFrom);
   const [to,   setTo]   = useState(defaultTo);
-
   const { data, isLoading, isError } = useDonationSummary(from, to);
 
   return (
     <div className="space-y-5">
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <div className="w-40">
           <Input label="From" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
         </div>
@@ -58,41 +102,35 @@ function DonationSummaryTab() {
         </div>
       </div>
 
-      {isLoading ? (
-        <ReportSkeleton />
-      ) : isError ? (
-        <ErrorState />
-      ) : !data ? (
+      {isLoading ? <ReportSkeleton /> : isError ? <ErrorState /> : !data ? (
         <EmptyState message="No data for this period" />
       ) : (
         <div className="space-y-5">
-          {/* Totals */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-lg bg-surface border border-border p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="rounded-lg bg-bg-surface border border-border-subtle p-4">
               <p className="text-caption text-text-muted uppercase tracking-wide">Grand Total</p>
-              <p className="mt-1 text-h2 font-bold text-success">
+              <p className="mt-1 text-h2 font-bold text-success-DEFAULT">
                 ₹{parseFloat(data.grandTotal).toLocaleString('en-IN')}
               </p>
             </div>
-            <div className="rounded-lg bg-surface border border-border p-4">
+            <div className="rounded-lg bg-bg-surface border border-border-subtle p-4">
               <p className="text-caption text-text-muted uppercase tracking-wide">Confirmed Donations</p>
               <p className="mt-1 text-h2 font-bold text-text-primary">{data.confirmedCount}</p>
             </div>
           </div>
 
-          {/* By mode */}
           <SectionCard title="By Payment Mode">
             <table className="w-full text-body">
               <thead>
-                <tr className="border-b border-border">
-                  <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Mode</th>
-                  <th className="pb-2 text-center text-caption text-text-muted font-medium uppercase">Count</th>
-                  <th className="pb-2 text-right text-caption text-text-muted font-medium uppercase">Total</th>
+                <tr className="border-b border-border-subtle">
+                  <th className={`${thCls} text-left`}>Mode</th>
+                  <th className={`${thCls} text-center`}>Count</th>
+                  <th className={`${thCls} text-right`}>Total</th>
                 </tr>
               </thead>
               <tbody>
                 {(data.byMode ?? []).map((row) => (
-                  <tr key={row.mode} className="border-b border-border last:border-0">
+                  <tr key={row.mode} className="border-b border-border-subtle last:border-0">
                     <td className="py-2 text-text-primary">{row.mode}</td>
                     <td className="py-2 text-center text-text-secondary">{row.count}</td>
                     <td className="py-2 text-right font-semibold text-text-primary">
@@ -104,19 +142,18 @@ function DonationSummaryTab() {
             </table>
           </SectionCard>
 
-          {/* By category */}
           <SectionCard title="By Category">
             <table className="w-full text-body">
               <thead>
-                <tr className="border-b border-border">
-                  <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Category</th>
-                  <th className="pb-2 text-center text-caption text-text-muted font-medium uppercase">Count</th>
-                  <th className="pb-2 text-right text-caption text-text-muted font-medium uppercase">Total</th>
+                <tr className="border-b border-border-subtle">
+                  <th className={`${thCls} text-left`}>Category</th>
+                  <th className={`${thCls} text-center`}>Count</th>
+                  <th className={`${thCls} text-right`}>Total</th>
                 </tr>
               </thead>
               <tbody>
                 {(data.byCategory ?? []).map((row) => (
-                  <tr key={row.categoryId} className="border-b border-border last:border-0">
+                  <tr key={row.categoryId} className="border-b border-border-subtle last:border-0">
                     <td className="py-2 text-text-primary">{row.categoryName}</td>
                     <td className="py-2 text-center text-text-secondary">{row.count}</td>
                     <td className="py-2 text-right font-semibold text-text-primary">
@@ -150,22 +187,18 @@ function EightyGTab() {
         />
       </div>
 
-      {isLoading ? (
-        <ReportSkeleton />
-      ) : isError ? (
-        <ErrorState />
-      ) : !data ? (
+      {isLoading ? <ReportSkeleton /> : isError ? <ErrorState /> : !data ? (
         <EmptyState message="No 80G data for this fiscal year" />
       ) : (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-lg bg-surface border border-border p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="rounded-lg bg-bg-surface border border-border-subtle p-4">
               <p className="text-caption text-text-muted uppercase tracking-wide">80G Eligible Total</p>
               <p className="mt-1 text-h2 font-bold text-text-primary">
                 ₹{parseFloat(data.totalEligibleAmount).toLocaleString('en-IN')}
               </p>
             </div>
-            <div className="rounded-lg bg-surface border border-border p-4">
+            <div className="rounded-lg bg-bg-surface border border-border-subtle p-4">
               <p className="text-caption text-text-muted uppercase tracking-wide">Unique Donors</p>
               <p className="mt-1 text-h2 font-bold text-text-primary">{data.donorCount}</p>
             </div>
@@ -174,16 +207,16 @@ function EightyGTab() {
           <SectionCard title={`80G Donations — ${fiscalYear}`}>
             <table className="w-full text-body">
               <thead>
-                <tr className="border-b border-border">
-                  <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Donor</th>
-                  <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">PAN</th>
-                  <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Date</th>
-                  <th className="pb-2 text-right text-caption text-text-muted font-medium uppercase">Amount</th>
+                <tr className="border-b border-border-subtle">
+                  <th className={`${thCls} text-left`}>Donor</th>
+                  <th className={`${thCls} text-left`}>PAN</th>
+                  <th className={`${thCls} text-left`}>Date</th>
+                  <th className={`${thCls} text-right`}>Amount</th>
                 </tr>
               </thead>
               <tbody>
                 {(data.donations ?? []).map((d) => (
-                  <tr key={d.id} className="border-b border-border last:border-0">
+                  <tr key={d.id} className="border-b border-border-subtle last:border-0">
                     <td className="py-2 text-text-primary">{d.donorName}</td>
                     <td className="py-2 text-caption text-text-muted font-mono">
                       {d.donorPanMasked ?? '—'}
@@ -216,115 +249,114 @@ function DaySheetTab() {
   const sevaBookings = data?.sevaBookings ?? [];
   const donations    = data?.donations ?? [];
 
+  const dateLabel = new Date(date).toLocaleDateString('en-IN', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  });
+
   return (
     <div className="space-y-5">
       <div className="w-40">
         <Input label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
       </div>
 
-      {isLoading ? (
-        <ReportSkeleton />
-      ) : isError ? (
-        <ErrorState />
-      ) : sevaBookings.length === 0 && donations.length === 0 ? (
-        <EmptyState message="No activity for this date" />
-      ) : (
-        <div className="space-y-5">
-          {/* Totals */}
-          {data && (
-            <div className="grid grid-cols-3 gap-4">
-              {[
-                { label: 'Donations',    value: data.donationTotal, color: 'text-text-primary' },
-                { label: 'Seva Bookings', value: data.sevaTotal,    color: 'text-text-primary' },
-                { label: 'Grand Total',  value: data.grandTotal,    color: 'text-success'      },
-              ].map(({ label, value, color }) => (
-                <div key={label} className="rounded-lg bg-surface border border-border p-4">
-                  <p className="text-caption text-text-muted uppercase tracking-wide">{label}</p>
-                  <p className={`mt-1 text-h2 font-bold ${color}`}>
-                    ₹{parseFloat(value).toLocaleString('en-IN')}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
+      {isLoading ? <ReportSkeleton /> : isError ? <ErrorState /> :
+        sevaBookings.length === 0 && donations.length === 0 ? (
+          <EmptyState message="No activity for this date" />
+        ) : (
+          <div className="space-y-5">
+            {data && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[
+                  { label: 'Donations',     value: data.donationTotal, colorClass: 'text-text-primary'   },
+                  { label: 'Seva Bookings', value: data.sevaTotal,     colorClass: 'text-text-primary'   },
+                  { label: 'Grand Total',   value: data.grandTotal,    colorClass: 'text-success-DEFAULT' },
+                ].map(({ label, value, colorClass }) => (
+                  <div key={label} className="rounded-lg bg-bg-surface border border-border-subtle p-4">
+                    <p className="text-caption text-text-muted uppercase tracking-wide">{label}</p>
+                    <p className={`mt-1 text-h2 font-bold ${colorClass}`}>
+                      ₹{parseFloat(value).toLocaleString('en-IN')}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
 
-          {/* Seva bookings */}
-          {sevaBookings.length > 0 && (
-            <SectionCard title={`Seva Bookings — ${new Date(date).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`}>
-              <table className="w-full text-body">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Time</th>
-                    <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Seva</th>
-                    <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Devotee</th>
-                    <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Sankalpa</th>
-                    <th className="pb-2 text-right text-caption text-text-muted font-medium uppercase">Amount</th>
-                    <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sevaBookings
-                    .slice()
-                    .sort((a, b) => (a.timeSlot ?? '').localeCompare(b.timeSlot ?? ''))
-                    .map((b) => (
-                      <tr key={b.id} className="border-b border-border last:border-0">
-                        <td className="py-2 text-label font-medium text-text-primary">{b.timeSlot}</td>
-                        <td className="py-2 text-text-primary">{b.sevaType?.name ?? '—'}</td>
-                        <td className="py-2">
-                          <p className="text-text-primary">{b.devoteeName}</p>
-                          {b.devoteePhone && (
-                            <p className="text-caption text-text-muted">{b.devoteePhone}</p>
-                          )}
+            {sevaBookings.length > 0 && (
+              <SectionCard title={`Seva Bookings — ${dateLabel}`}>
+                <table className="w-full text-body min-w-[520px]">
+                  <thead>
+                    <tr className="border-b border-border-subtle">
+                      <th className={`${thCls} text-left`}>Time</th>
+                      <th className={`${thCls} text-left`}>Seva</th>
+                      <th className={`${thCls} text-left`}>Devotee</th>
+                      <th className={`${thCls} text-left`}>Sankalpa</th>
+                      <th className={`${thCls} text-right`}>Amount</th>
+                      <th className={`${thCls} text-left`}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sevaBookings
+                      .slice()
+                      .sort((a, b) => (a.timeSlot ?? '').localeCompare(b.timeSlot ?? ''))
+                      .map((b) => (
+                        <tr key={b.id} className="border-b border-border-subtle last:border-0">
+                          <td className="py-2 text-label font-medium text-text-primary">{b.timeSlot}</td>
+                          <td className="py-2 text-text-primary">{b.sevaType?.name ?? '—'}</td>
+                          <td className="py-2">
+                            <p className="text-text-primary">{b.devoteeName}</p>
+                            {b.devoteePhone && (
+                              <p className="text-caption text-text-muted">{b.devoteePhone}</p>
+                            )}
+                          </td>
+                          <td className="py-2 text-text-secondary">{b.sankalpaName ?? '—'}</td>
+                          <td className="py-2 text-right font-semibold text-text-primary">
+                            ₹{parseFloat(b.amount).toLocaleString('en-IN')}
+                          </td>
+                          <td className="py-2">
+                            <Badge label={b.status} />
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </SectionCard>
+            )}
+
+            {donations.length > 0 && (
+              <SectionCard title="Donations">
+                <table className="w-full text-body min-w-[400px]">
+                  <thead>
+                    <tr className="border-b border-border-subtle">
+                      <th className={`${thCls} text-left`}>Donor</th>
+                      <th className={`${thCls} text-left`}>Mode</th>
+                      <th className={`${thCls} text-left`}>Receipt</th>
+                      <th className={`${thCls} text-right`}>Amount</th>
+                      <th className={`${thCls} text-left`}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {donations.map((d) => (
+                      <tr key={d.id} className="border-b border-border-subtle last:border-0">
+                        <td className="py-2 text-text-primary">{d.donorName}</td>
+                        <td className="py-2 text-text-secondary">{d.mode}</td>
+                        <td className="py-2 text-caption text-text-muted font-mono">
+                          {d.receiptNumber ?? '—'}
                         </td>
-                        <td className="py-2 text-text-secondary">{b.sankalpaName ?? '—'}</td>
-                        <td className="py-2 text-right font-semibold text-text-primary">
-                          ₹{parseFloat(b.amount).toLocaleString('en-IN')}
+                        <td className="py-2 text-right font-semibold text-success-DEFAULT">
+                          ₹{parseFloat(d.amount).toLocaleString('en-IN')}
                         </td>
                         <td className="py-2">
-                          <Badge label={b.status} />
+                          <Badge label={d.status} />
                         </td>
                       </tr>
                     ))}
-                </tbody>
-              </table>
-            </SectionCard>
-          )}
-
-          {/* Donations */}
-          {donations.length > 0 && (
-            <SectionCard title="Donations">
-              <table className="w-full text-body">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Donor</th>
-                    <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Mode</th>
-                    <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Receipt</th>
-                    <th className="pb-2 text-right text-caption text-text-muted font-medium uppercase">Amount</th>
-                    <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {donations.map((d) => (
-                    <tr key={d.id} className="border-b border-border last:border-0">
-                      <td className="py-2 text-text-primary">{d.donorName}</td>
-                      <td className="py-2 text-text-secondary">{d.mode}</td>
-                      <td className="py-2 text-caption text-text-muted font-mono">
-                        {d.receiptNumber ?? '—'}
-                      </td>
-                      <td className="py-2 text-right font-semibold text-success">
-                        ₹{parseFloat(d.amount).toLocaleString('en-IN')}
-                      </td>
-                      <td className="py-2">
-                        <Badge label={d.status} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </SectionCard>
-          )}
-        </div>
-      )}
+                  </tbody>
+                </table>
+              </SectionCard>
+            )}
+          </div>
+        )
+      }
     </div>
   );
 }
@@ -346,57 +378,57 @@ function LedgerReportTab() {
         />
       </div>
 
-      {isLoading ? (
-        <ReportSkeleton />
-      ) : isError ? (
-        <ErrorState />
-      ) : !data ? (
+      {isLoading ? <ReportSkeleton /> : isError ? <ErrorState /> : !data ? (
         <EmptyState message="No ledger data for this fiscal year" />
       ) : (
         <div className="space-y-5">
-          {/* Totals */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
-              { label: 'Total Income',  value: data.totalIncome,  color: 'text-success'      },
-              { label: 'Total Expense', value: data.totalExpense, color: 'text-danger'        },
-              { label: 'Net Balance',   value: data.netBalance,   color: parseFloat(data.netBalance) >= 0 ? 'text-text-primary' : 'text-danger' },
-            ].map(({ label, value, color }) => (
-              <div key={label} className="rounded-lg bg-surface border border-border p-4">
+              { label: 'Total Income',  value: data.totalIncome,  colorClass: 'text-success-DEFAULT' },
+              { label: 'Total Expense', value: data.totalExpense, colorClass: 'text-danger-DEFAULT'  },
+              {
+                label: 'Net Balance',
+                value: data.netBalance,
+                colorClass: parseFloat(data.netBalance) >= 0 ? 'text-text-primary' : 'text-danger-DEFAULT',
+              },
+            ].map(({ label, value, colorClass }) => (
+              <div key={label} className="rounded-lg bg-bg-surface border border-border-subtle p-4">
                 <p className="text-caption text-text-muted uppercase tracking-wide">{label}</p>
-                <p className={`mt-1 text-h2 font-bold ${color}`}>
+                <p className={`mt-1 text-h2 font-bold ${colorClass}`}>
                   ₹{parseFloat(value).toLocaleString('en-IN')}
                 </p>
               </div>
             ))}
           </div>
 
-          {/* By fund */}
           {(data.byFund ?? []).length > 0 && (
             <SectionCard title="By Fund">
-              <table className="w-full text-body">
+              <table className="w-full text-body min-w-[360px]">
                 <thead>
-                  <tr className="border-b border-border">
-                    <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Fund</th>
-                    <th className="pb-2 text-right text-caption text-text-muted font-medium uppercase">Income</th>
-                    <th className="pb-2 text-right text-caption text-text-muted font-medium uppercase">Expense</th>
-                    <th className="pb-2 text-right text-caption text-text-muted font-medium uppercase">Net</th>
+                  <tr className="border-b border-border-subtle">
+                    <th className={`${thCls} text-left`}>Fund</th>
+                    <th className={`${thCls} text-right`}>Income</th>
+                    <th className={`${thCls} text-right`}>Expense</th>
+                    <th className={`${thCls} text-right`}>Net</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.byFund.map((row) => {
                     const net = parseFloat(row.totalIncome) - parseFloat(row.totalExpense);
                     return (
-                      <tr key={row.fundId ?? 'unallocated'} className="border-b border-border last:border-0">
+                      <tr key={row.fundId ?? 'unallocated'} className="border-b border-border-subtle last:border-0">
                         <td className="py-2 text-text-primary">
-                          {row.fundId ? row.fundId : <span className="text-text-muted italic">Unallocated</span>}
+                          {row.fundId
+                            ? row.fundId
+                            : <span className="text-text-muted italic">Unallocated</span>}
                         </td>
-                        <td className="py-2 text-right text-success font-medium">
+                        <td className="py-2 text-right text-success-DEFAULT font-medium">
                           ₹{parseFloat(row.totalIncome).toLocaleString('en-IN')}
                         </td>
-                        <td className="py-2 text-right text-danger font-medium">
+                        <td className="py-2 text-right text-danger-DEFAULT font-medium">
                           ₹{parseFloat(row.totalExpense).toLocaleString('en-IN')}
                         </td>
-                        <td className={`py-2 text-right font-semibold ${net >= 0 ? 'text-text-primary' : 'text-danger'}`}>
+                        <td className={`py-2 text-right font-semibold ${net >= 0 ? 'text-text-primary' : 'text-danger-DEFAULT'}`}>
                           ₹{net.toLocaleString('en-IN')}
                         </td>
                       </tr>
@@ -412,45 +444,6 @@ function LedgerReportTab() {
   );
 }
 
-// ─── Shared primitives ────────────────────────────────────────────────────────
-
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-lg bg-surface border border-border overflow-hidden">
-      <div className="px-5 py-3 border-b border-border bg-surface-2">
-        <h3 className="text-label font-semibold text-text-secondary uppercase tracking-wide">{title}</h3>
-      </div>
-      <div className="px-5 py-4">{children}</div>
-    </div>
-  );
-}
-
-function ReportSkeleton() {
-  return (
-    <div className="rounded-lg bg-surface border border-border p-5 space-y-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="h-5 bg-surface-2 rounded animate-pulse" style={{ width: `${50 + (i * 17) % 50}%` }} />
-      ))}
-    </div>
-  );
-}
-
-function ErrorState() {
-  return (
-    <div className="rounded-lg bg-surface border border-border p-8 text-center text-danger text-body">
-      Failed to load report data. Please try again.
-    </div>
-  );
-}
-
-function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="rounded-lg bg-surface border border-border p-10 text-center text-text-muted text-body">
-      {message}
-    </div>
-  );
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function ReportsPage() {
@@ -460,17 +453,18 @@ export function ReportsPage() {
     <div className="space-y-5">
       <h1 className="text-h1 font-bold text-text-primary">Reports</h1>
 
-      {/* Tab bar */}
-      <div className="flex gap-1 rounded-lg bg-surface border border-border p-1">
+      {/* Tab bar — scrollable on mobile */}
+      <div className="flex gap-1 rounded-lg bg-bg-surface border border-border-subtle p-1 overflow-x-auto">
         {TABS.map((tab) => (
           <button
             key={tab.id}
+            type="button"
             onClick={() => setActiveTab(tab.id)}
             className={[
-              'flex-1 h-9 rounded-md text-label transition-colors',
+              'flex-shrink-0 flex-1 min-w-[120px] h-9 rounded-md text-label transition-colors',
               activeTab === tab.id
-                ? 'bg-primary text-white shadow-sm'
-                : 'text-text-secondary hover:text-text-primary hover:bg-surface-2',
+                ? 'bg-brand-primary text-text-inverse shadow-sm'
+                : 'text-text-secondary hover:text-text-primary hover:bg-bg-surface-2',
             ].join(' ')}
           >
             {tab.label}

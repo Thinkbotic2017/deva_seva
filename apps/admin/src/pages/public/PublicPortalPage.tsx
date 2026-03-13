@@ -7,19 +7,12 @@ import { PublicSevaTab } from './PublicSevaTab';
 
 type Tab = 'donate' | 'seva';
 
-// Inline styles for the root wrapper — override admin dark theme unconditionally.
-const rootStyle: React.CSSProperties = {
-  minHeight: '100vh',
-  backgroundColor: '#ffffff',
-  color: '#111827',
-  fontFamily: 'Noto Sans, -apple-system, BlinkMacSystemFont, sans-serif',
-};
-
 /**
  * PublicPortalPage — the iframe-embeddable donation and seva portal.
  * Route: /portal/:slug (no auth required, outside ProtectedRoute)
  *
- * Uses inline styles on the outermost wrapper to escape the admin dark theme.
+ * Follows the admin theme via CSS tokens. Reads localStorage key 'theme'
+ * and system preference to apply the dark class before first render.
  */
 export function PublicPortalPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -28,6 +21,18 @@ export function PublicPortalPage() {
   const [loadError, setLoadError] = useState('');
   const initialTab = (searchParams.get('tab') === 'seva' ? 'seva' : 'donate') as Tab;
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+
+  // Sync dark class with saved preference or system preference.
+  // The portal has no theme toggle, so it follows the stored setting.
+  useEffect(() => {
+    const saved = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (saved === 'dark' || (!saved && prefersDark)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
 
   useEffect(() => {
     if (!slug) return;
@@ -40,10 +45,10 @@ export function PublicPortalPage() {
 
   if (loadError) {
     return (
-      <div style={rootStyle} className="flex items-center justify-center p-6">
+      <div className="min-h-screen bg-bg-page flex items-center justify-center p-6">
         <div className="text-center max-w-sm">
-          <p className="text-red-600 font-medium mb-2">Temple not found</p>
-          <p className="text-gray-500 text-sm">{loadError}</p>
+          <p className="text-danger-fg font-medium mb-2">Temple not found</p>
+          <p className="text-text-muted text-sm">{loadError}</p>
         </div>
       </div>
     );
@@ -51,8 +56,8 @@ export function PublicPortalPage() {
 
   if (!data) {
     return (
-      <div style={rootStyle} className="flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-bg-page flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -61,31 +66,26 @@ export function PublicPortalPage() {
   const showSevaTab = sevaTypes.length > 0;
 
   return (
-    <div style={rootStyle}>
+    <div className="min-h-screen bg-bg-page text-text-primary">
+
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-4">
-        <div className="max-w-md mx-auto flex items-center gap-3">
-          {temple.logoUrl && (
-            <img src={temple.logoUrl} alt={temple.name} className="w-10 h-10 rounded-full object-cover" />
-          )}
-          <div>
-            <h1 className="text-base font-semibold text-orange-900 leading-tight">{temple.name}</h1>
-            {(temple.city || temple.state) && (
-              <p className="text-xs text-gray-400">{[temple.city, temple.state].filter(Boolean).join(', ')}</p>
-            )}
-          </div>
+      <div className="text-center pt-8 pb-4 px-4">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-brand-primary text-white font-bold text-lg mb-3">
+          {temple.name.charAt(0)}
         </div>
+        <h1 className="text-xl font-bold text-text-primary">{temple.name}</h1>
+        <p className="text-sm text-text-muted mt-1">Online Donations & Seva Booking</p>
       </div>
 
-      {/* Tabs */}
-      <div className="max-w-md mx-auto px-4 pt-4">
-        <div className="flex rounded-full bg-white border border-gray-200 p-1 mb-6">
+      {/* Tab bar */}
+      <div className="flex justify-center my-6 px-4">
+        <div className="flex gap-1 p-1 bg-bg-surface-3 rounded-full border border-border-subtle w-full max-w-sm">
           <button
             onClick={() => setActiveTab('donate')}
-            className={`flex-1 py-2 rounded-full text-sm font-medium transition-colors ${
+            className={`flex-1 py-2.5 px-4 rounded-full text-sm font-semibold transition-all duration-200 ${
               activeTab === 'donate'
-                ? 'bg-orange-500 text-white'
-                : 'text-gray-500 hover:text-orange-500'
+                ? 'bg-brand-primary text-white shadow-sm'
+                : 'text-text-secondary hover:text-text-primary'
             }`}
           >
             Donate
@@ -93,31 +93,31 @@ export function PublicPortalPage() {
           {showSevaTab && (
             <button
               onClick={() => setActiveTab('seva')}
-              className={`flex-1 py-2 rounded-full text-sm font-medium transition-colors ${
+              className={`flex-1 py-2.5 px-4 rounded-full text-sm font-semibold transition-all duration-200 ${
                 activeTab === 'seva'
-                  ? 'bg-orange-500 text-white'
-                  : 'text-gray-500 hover:text-orange-500'
+                  ? 'bg-brand-primary text-white shadow-sm'
+                  : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               Book Seva
             </button>
           )}
         </div>
-
-        {/* Content */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-8">
-          {activeTab === 'donate' ? (
-            <PublicDonateTab temple={temple} categories={categories} />
-          ) : (
-            <PublicSevaTab temple={temple} sevaTypes={sevaTypes} />
-          )}
-        </div>
-
-        {/* Footer */}
-        <p className="text-center text-xs text-gray-400 pb-6">
-          Powered by <span className="text-orange-500 font-medium">DevaSeva</span>
-        </p>
       </div>
+
+      {/* Content — tab components own their own card wrapper */}
+      <div className="py-6 px-4">
+        {activeTab === 'donate' ? (
+          <PublicDonateTab temple={temple} categories={categories} />
+        ) : (
+          <PublicSevaTab temple={temple} sevaTypes={sevaTypes} />
+        )}
+      </div>
+
+      {/* Footer */}
+      <p className="text-center text-xs text-text-muted pb-8">
+        Powered by <span className="text-brand-primary font-medium">DevaSeva</span>
+      </p>
     </div>
   );
 }

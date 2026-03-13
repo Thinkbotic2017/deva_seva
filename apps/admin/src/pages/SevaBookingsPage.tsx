@@ -23,17 +23,17 @@ const STATUS_OPTIONS = [
 ];
 
 const PAYMENT_MODE_OPTIONS = [
-  { value: 'CASH',  label: 'Cash'  },
-  { value: 'UPI',   label: 'UPI'   },
-  { value: 'CARD',  label: 'Card'  },
-  { value: 'ONLINE',label: 'Online'},
+  { value: 'CASH',   label: 'Cash'   },
+  { value: 'UPI',    label: 'UPI'    },
+  { value: 'CARD',   label: 'Card'   },
+  { value: 'ONLINE', label: 'Online' },
 ];
 
 function todayIST(): string {
-  const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+  const nowIST = new Date(Date.now() + (5 * 60 + 30) * 60 * 1000);
   const yyyy = nowIST.getUTCFullYear();
-  const mm = String(nowIST.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(nowIST.getUTCDate()).padStart(2, '0');
+  const mm   = String(nowIST.getUTCMonth() + 1).padStart(2, '0');
+  const dd   = String(nowIST.getUTCDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
 }
 
@@ -65,15 +65,66 @@ function TableSkeleton() {
   return (
     <tbody>
       {Array.from({ length: 8 }).map((_, i) => (
-        <tr key={i} className="border-b border-border">
+        <tr key={i} className="border-b border-border-subtle">
           {Array.from({ length: 7 }).map((_, j) => (
             <td key={j} className="px-4 py-3">
-              <div className="h-4 bg-surface-2 rounded animate-pulse" style={{ width: `${55 + (j * 11) % 45}%` }} />
+              <div
+                className="h-4 bg-bg-surface-2 rounded animate-pulse"
+                style={{ width: `${55 + (j * 11) % 45}%` }}
+              />
             </td>
           ))}
         </tr>
       ))}
     </tbody>
+  );
+}
+
+// ─── Mobile card ──────────────────────────────────────────────────────────────
+
+interface BookingCardProps {
+  b: {
+    id: string;
+    bookingNumber?: string;
+    devoteeName: string;
+    devoteePhone?: string;
+    sevaTypeId: string;
+    tierName: string;
+    sevaDate: string;
+    timeSlot: string;
+    amount: string;
+    paymentMode: string;
+    status: string;
+  };
+  sevaTypeName: string;
+}
+
+function BookingCard({ b, sevaTypeName }: BookingCardProps) {
+  return (
+    <div className="p-4 border-b border-border-subtle last:border-0">
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <div className="min-w-0">
+          <p className="text-label text-text-primary truncate">{b.devoteeName}</p>
+          {b.devoteePhone && <p className="text-caption text-text-muted">{b.devoteePhone}</p>}
+        </div>
+        <p className="text-label font-semibold text-text-primary flex-shrink-0">
+          ₹{parseFloat(b.amount).toLocaleString('en-IN')}
+        </p>
+      </div>
+      <p className="text-body text-text-secondary truncate">{sevaTypeName}</p>
+      <p className="text-caption text-text-muted">{b.tierName}</p>
+      <div className="flex items-center gap-2 flex-wrap mt-2">
+        <Badge label={b.status} />
+        <span className="text-caption text-text-muted">{formatDateString(b.sevaDate)}</span>
+        <span className="text-caption text-text-muted">·</span>
+        <span className="text-caption text-text-muted">{b.timeSlot}</span>
+        <span className="text-caption text-text-muted">·</span>
+        <span className="text-caption text-text-muted">{b.paymentMode}</span>
+      </div>
+      {b.bookingNumber && (
+        <p className="mt-1 text-caption text-text-muted font-mono">{b.bookingNumber}</p>
+      )}
+    </div>
   );
 }
 
@@ -129,7 +180,7 @@ export function SevaBookingsPage() {
     try {
       const result = await apiGet<{ data: DevoteeDetail[]; total: number }>('/devotees', { search: cleaned, limit: 1 });
       if (!result.data.length) throw new Error('not found');
-      const devotee = result.data[0];
+      const devotee = result.data[0]!;
       setDevoteeId(devotee.id);
       setDevoteeFoundName(devotee.name);
       setDevoteeStatus('found');
@@ -170,7 +221,6 @@ export function SevaBookingsPage() {
 
     createMutation.mutate(dto, {
       onSuccess: (createdBooking) => {
-        // Fire-and-forget: register new devotee after booking is saved
         if (devoteeStatus === 'new' && form.devoteePhone) {
           const cleaned = form.devoteePhone.replace(/\D/g, '');
           if (/^[6-9]\d{9}$/.test(cleaned)) {
@@ -182,7 +232,7 @@ export function SevaBookingsPage() {
                 });
                 await apiPatch(`/sevas/bookings/${createdBooking.id}/devotee`, { devoteeId: newDevotee.id });
               } catch {
-                // silently ignore — booking is already saved
+                // silently ignore — booking already saved
               }
             })();
           }
@@ -192,13 +242,11 @@ export function SevaBookingsPage() {
     });
   }
 
-  // Populate tier options from selected seva type
   const selectedType = sevaTypes.find((t) => t.id === form.sevaTypeId);
   const tierOptions = selectedType?.pricingTiers.map((t) => ({
     value: t.name,
     label: `${t.name} — ₹${t.price}`,
   })) ?? [];
-
   const sevaTypeOptions = sevaTypes.map((t) => ({ value: t.id, label: t.name }));
   const meta = data?.meta;
 
@@ -216,7 +264,7 @@ export function SevaBookingsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 rounded-lg bg-surface border border-border p-4">
+      <div className="flex flex-wrap gap-3 rounded-lg bg-bg-surface border border-border-subtle p-4">
         <div className="flex-1 min-w-[140px]">
           <Input
             label="Date"
@@ -245,12 +293,14 @@ export function SevaBookingsPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="rounded-lg bg-surface border border-border overflow-hidden">
-        <div className="overflow-x-auto">
+      {/* Table + cards */}
+      <div className="rounded-lg bg-bg-surface border border-border-subtle overflow-hidden">
+
+        {/* ── Desktop table ── */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-body">
             <thead>
-              <tr className="border-b border-border bg-surface-2">
+              <tr className="border-b border-border-subtle bg-bg-surface-2">
                 <th className="px-4 py-3 text-left text-caption text-text-muted font-medium uppercase tracking-wide">Booking #</th>
                 <th className="px-4 py-3 text-left text-caption text-text-muted font-medium uppercase tracking-wide">Devotee</th>
                 <th className="px-4 py-3 text-left text-caption text-text-muted font-medium uppercase tracking-wide">Seva</th>
@@ -266,7 +316,7 @@ export function SevaBookingsPage() {
             ) : isError ? (
               <tbody>
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-danger text-body">
+                  <td colSpan={7} className="px-4 py-12 text-center text-danger-DEFAULT text-body">
                     Failed to load bookings. Please try again.
                   </td>
                 </tr>
@@ -282,7 +332,7 @@ export function SevaBookingsPage() {
             ) : (
               <tbody>
                 {data.data.map((b) => (
-                  <tr key={b.id} className="border-b border-border hover:bg-surface-2 transition-colors">
+                  <tr key={b.id} className="border-b border-border-subtle hover:bg-bg-surface-2 transition-colors">
                     <td className="px-4 py-3 text-caption text-text-muted font-mono">
                       {b.bookingNumber ?? '—'}
                     </td>
@@ -299,9 +349,7 @@ export function SevaBookingsPage() {
                       <p className="text-caption text-text-muted">{b.tierName}</p>
                     </td>
                     <td className="px-4 py-3">
-                      <p className="text-body text-text-secondary">
-                        {formatDateString(b.sevaDate)}
-                      </p>
+                      <p className="text-body text-text-secondary">{formatDateString(b.sevaDate)}</p>
                       <p className="text-caption text-text-muted">{b.timeSlot}</p>
                     </td>
                     <td className="px-4 py-3 text-right text-label font-semibold text-text-primary">
@@ -316,6 +364,37 @@ export function SevaBookingsPage() {
               </tbody>
             )}
           </table>
+        </div>
+
+        {/* ── Mobile cards ── */}
+        <div className="sm:hidden">
+          {isLoading ? (
+            <div className="divide-y divide-border-subtle">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="p-4 space-y-2">
+                  <div className="flex justify-between">
+                    <div className="h-4 w-32 bg-bg-surface-2 rounded animate-pulse" />
+                    <div className="h-4 w-16 bg-bg-surface-2 rounded animate-pulse" />
+                  </div>
+                  <div className="h-3 w-48 bg-bg-surface-2 rounded animate-pulse" />
+                </div>
+              ))}
+            </div>
+          ) : isError ? (
+            <p className="px-4 py-12 text-center text-danger-DEFAULT text-body">
+              Failed to load bookings. Please try again.
+            </p>
+          ) : !data?.data.length ? (
+            <p className="px-4 py-12 text-center text-text-muted text-body">No bookings found</p>
+          ) : (
+            data.data.map((b) => (
+              <BookingCard
+                key={b.id}
+                b={b}
+                sevaTypeName={sevaTypes.find((t) => t.id === b.sevaTypeId)?.name ?? '—'}
+              />
+            ))
+          )}
         </div>
 
         {meta && (
@@ -345,7 +424,7 @@ export function SevaBookingsPage() {
             error={formErrors.sevaTypeId}
           />
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Input
                 label="Phone"
@@ -356,10 +435,10 @@ export function SevaBookingsPage() {
                 error={formErrors.devoteePhone}
               />
               {devoteeStatus === 'found' && (
-                <p className="mt-1 text-caption text-green-600">✓ Devotee found: {devoteeFoundName}</p>
+                <p className="mt-1 text-caption text-success-DEFAULT">✓ Devotee found: {devoteeFoundName}</p>
               )}
               {devoteeStatus === 'new' && (
-                <p className="mt-1 text-caption text-amber-600">New devotee — will be registered on save</p>
+                <p className="mt-1 text-caption text-warning-DEFAULT">New devotee — will be registered on save</p>
               )}
             </div>
             <Input
@@ -378,7 +457,7 @@ export function SevaBookingsPage() {
             error={formErrors.devoteeName}
           />
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               label="Seva Date *"
               type="date"
@@ -418,7 +497,7 @@ export function SevaBookingsPage() {
             />
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               label="Amount (₹) *"
               type="number"
@@ -443,12 +522,12 @@ export function SevaBookingsPage() {
           />
 
           {createMutation.isError && (
-            <p className="text-caption text-danger">
+            <p className="text-caption text-danger-DEFAULT">
               Failed to create booking. Please try again.
             </p>
           )}
 
-          <div className="flex gap-3 pt-2 border-t border-border">
+          <div className="flex gap-3 pt-2 border-t border-border-subtle">
             <Button type="button" variant="ghost" className="flex-1" onClick={closeModal}>
               Cancel
             </Button>

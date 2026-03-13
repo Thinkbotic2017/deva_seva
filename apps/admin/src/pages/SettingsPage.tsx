@@ -123,9 +123,9 @@ function CategoryModal({
             placeholder="Optional description"
             rows={2}
             className={[
-              'rounded-md bg-surface-2 px-4 py-3 text-body text-text-primary resize-none',
-              'border border-border hover:border-text-muted transition-colors duration-150',
-              'focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background',
+              'rounded-md bg-bg-surface-2 px-4 py-3 text-body text-text-primary resize-none',
+              'border border-border-subtle hover:border-text-muted transition-colors duration-150',
+              'focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 focus:ring-offset-bg-surface',
               'focus:border-transparent outline-none placeholder:text-text-muted',
             ].join(' ')}
           />
@@ -168,7 +168,7 @@ function CategoryModal({
             onClick={() => onSetField('is80gEligible', !form.is80gEligible)}
             className={[
               'relative w-11 h-6 rounded-full transition-colors duration-200 cursor-pointer',
-              form.is80gEligible ? 'bg-primary' : 'bg-surface-2 border border-border',
+              form.is80gEligible ? 'bg-brand-primary' : 'bg-bg-surface-2 border border-border-subtle',
             ].join(' ')}
           >
             <span
@@ -260,7 +260,7 @@ function SevaTypeModal({
       width="max-w-lg"
     >
       <div className="px-6 py-5 space-y-4">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Input
             label="Name (English) *"
             value={form.name}
@@ -284,9 +284,9 @@ function SevaTypeModal({
             placeholder="Optional description"
             rows={2}
             className={[
-              'rounded-md bg-surface-2 px-4 py-3 text-body text-text-primary resize-none',
-              'border border-border hover:border-text-muted transition-colors duration-150',
-              'focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background',
+              'rounded-md bg-bg-surface-2 px-4 py-3 text-body text-text-primary resize-none',
+              'border border-border-subtle hover:border-text-muted transition-colors duration-150',
+              'focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 focus:ring-offset-bg-surface',
               'focus:border-transparent outline-none placeholder:text-text-muted',
             ].join(' ')}
           />
@@ -299,7 +299,7 @@ function SevaTypeModal({
           onChange={(e) => onSetField('frequency', e.target.value as SevaFrequency)}
         />
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Input
             label="Duration (min)"
             type="number"
@@ -345,9 +345,9 @@ function SevaTypeModal({
                   onSetField('pricingTiers', next);
                 }}
                 className={[
-                  'flex-1 rounded-md bg-surface-2 px-3 py-2 text-body text-text-primary',
-                  'border border-border hover:border-text-muted transition-colors duration-150',
-                  'focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background',
+                  'flex-1 rounded-md bg-bg-surface-2 px-3 py-2 text-body text-text-primary',
+                  'border border-border-subtle hover:border-text-muted transition-colors duration-150',
+                  'focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 focus:ring-offset-bg-surface',
                   'focus:border-transparent outline-none placeholder:text-text-muted',
                 ].join(' ')}
               />
@@ -363,16 +363,16 @@ function SevaTypeModal({
                   onSetField('pricingTiers', next);
                 }}
                 className={[
-                  'w-28 rounded-md bg-surface-2 px-3 py-2 text-body text-text-primary',
-                  'border border-border hover:border-text-muted transition-colors duration-150',
-                  'focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background',
+                  'w-28 rounded-md bg-bg-surface-2 px-3 py-2 text-body text-text-primary',
+                  'border border-border-subtle hover:border-text-muted transition-colors duration-150',
+                  'focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 focus:ring-offset-bg-surface',
                   'focus:border-transparent outline-none placeholder:text-text-muted',
                 ].join(' ')}
               />
               <button
                 type="button"
                 onClick={() => onSetField('pricingTiers', form.pricingTiers.filter((_, i) => i !== idx))}
-                className="w-7 h-7 flex items-center justify-center rounded text-text-muted hover:text-danger hover:bg-danger/10 transition-colors flex-shrink-0"
+                className="w-7 h-7 flex items-center justify-center rounded text-text-muted hover:text-danger-DEFAULT hover:bg-danger-DEFAULT/10 transition-colors flex-shrink-0"
                 aria-label="Remove tier"
               >
                 ×
@@ -382,7 +382,7 @@ function SevaTypeModal({
           <button
             type="button"
             onClick={() => onSetField('pricingTiers', [...form.pricingTiers, { name: '', price: 0 }])}
-            className="self-start text-caption text-primary hover:underline mt-0.5"
+            className="self-start text-caption text-brand-primary hover:underline mt-0.5"
           >
             + Add Tier
           </button>
@@ -396,7 +396,7 @@ function SevaTypeModal({
               onClick={() => onSetField('requiresSankalpa', !form.requiresSankalpa)}
               className={[
                 'relative w-11 h-6 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0',
-                form.requiresSankalpa ? 'bg-primary' : 'bg-surface-2 border border-border',
+                form.requiresSankalpa ? 'bg-brand-primary' : 'bg-bg-surface-2 border border-border-subtle',
               ].join(' ')}
             >
               <span
@@ -416,7 +416,7 @@ function SevaTypeModal({
               onClick={() => onSetField('isOnlineBookable', !form.isOnlineBookable)}
               className={[
                 'relative w-11 h-6 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0',
-                form.isOnlineBookable ? 'bg-primary' : 'bg-surface-2 border border-border',
+                form.isOnlineBookable ? 'bg-brand-primary' : 'bg-bg-surface-2 border border-border-subtle',
               ].join(' ')}
             >
               <span
@@ -636,8 +636,8 @@ function FinanceCatSection({ type, typeLabel, description }: FinanceCatSectionPr
 
   return (
     <>
-      <section className="rounded-lg bg-surface border border-border">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+      <section className="rounded-lg bg-bg-surface border border-border-subtle">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border-subtle">
           <div>
             <h2 className="text-h3 font-semibold text-text-primary">{typeLabel} Categories</h2>
             <p className="mt-0.5 text-caption text-text-muted">{description}</p>
@@ -648,26 +648,26 @@ function FinanceCatSection({ type, typeLabel, description }: FinanceCatSectionPr
         </div>
 
         {isLoading ? (
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-border-subtle">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="px-5 py-4 flex items-center gap-4">
-                <div className="w-4 h-4 bg-surface-2 rounded-full animate-pulse flex-shrink-0" />
-                <div className="flex-1 h-4 bg-surface-2 rounded animate-pulse" />
-                <div className="w-16 h-6 bg-surface-2 rounded animate-pulse" />
-                <div className="w-20 h-8 bg-surface-2 rounded-full animate-pulse" />
-                <div className="w-16 h-8 bg-surface-2 rounded-full animate-pulse" />
+                <div className="w-4 h-4 bg-bg-surface-2 rounded-full animate-pulse flex-shrink-0" />
+                <div className="flex-1 h-4 bg-bg-surface-2 rounded animate-pulse" />
+                <div className="w-16 h-6 bg-bg-surface-2 rounded animate-pulse" />
+                <div className="w-20 h-8 bg-bg-surface-2 rounded-full animate-pulse" />
+                <div className="w-16 h-8 bg-bg-surface-2 rounded-full animate-pulse" />
               </div>
             ))}
           </div>
         ) : categories.length === 0 ? (
           <div className="px-5 py-10 text-center text-text-muted text-body">
             No categories yet.{' '}
-            <button className="text-primary underline cursor-pointer" onClick={openCreate}>
+            <button className="text-brand-primary underline cursor-pointer" onClick={openCreate}>
               Add the first one.
             </button>
           </div>
         ) : (
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-border-subtle">
             {categories.map((cat) => (
               <div
                 key={cat.id}
@@ -686,7 +686,7 @@ function FinanceCatSection({ type, typeLabel, description }: FinanceCatSectionPr
 
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {cat.isSystem && (
-                    <span className="px-2 py-0.5 rounded-full text-caption font-medium bg-surface-2 text-text-muted">
+                    <span className="px-2 py-0.5 rounded-full text-caption font-medium bg-bg-surface-2 text-text-muted">
                       System
                     </span>
                   )}
@@ -694,8 +694,8 @@ function FinanceCatSection({ type, typeLabel, description }: FinanceCatSectionPr
                     className={[
                       'px-2 py-0.5 rounded-full text-caption font-medium',
                       cat.isActive
-                        ? 'bg-primary/10 text-primary'
-                        : 'bg-surface-2 text-text-muted',
+                        ? 'bg-brand-primary/10 text-brand-primary'
+                        : 'bg-bg-surface-2 text-text-muted',
                     ].join(' ')}
                   >
                     {cat.isActive ? 'Active' : 'Inactive'}
@@ -974,29 +974,31 @@ export function SettingsPage() {
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 p-1 rounded-lg bg-surface-2 w-fit">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            className={[
-              'px-4 py-2 rounded-md text-label transition-colors duration-150',
-              activeTab === tab.id
-                ? 'bg-surface text-text-primary shadow-sm'
-                : 'text-text-muted hover:text-text-primary',
-            ].join(' ')}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="overflow-x-auto -mx-1">
+        <div className="flex gap-1 p-1 rounded-lg bg-bg-surface-2 w-fit min-w-full sm:min-w-0 mx-1">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={[
+                'px-4 py-2 rounded-md text-label transition-colors duration-150 flex-shrink-0',
+                activeTab === tab.id
+                  ? 'bg-bg-surface text-text-primary shadow-sm'
+                  : 'text-text-muted hover:text-text-primary',
+              ].join(' ')}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Tab: Donation Categories */}
       {activeTab === 'donation-cats' && (
         <>
-          <section className="rounded-lg bg-surface border border-border">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <section className="rounded-lg bg-bg-surface border border-border-subtle">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border-subtle">
               <div>
                 <h2 className="text-h3 font-semibold text-text-primary">Donation Categories</h2>
                 <p className="mt-0.5 text-caption text-text-muted">
@@ -1009,26 +1011,26 @@ export function SettingsPage() {
             </div>
 
             {isLoading ? (
-              <div className="divide-y divide-border">
+              <div className="divide-y divide-border-subtle">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="px-5 py-4 flex items-center gap-4">
-                    <div className="w-3 h-3 rounded-full bg-surface-2 animate-pulse flex-shrink-0" />
-                    <div className="flex-1 h-4 bg-surface-2 rounded animate-pulse" />
-                    <div className="w-16 h-6 bg-surface-2 rounded animate-pulse" />
-                    <div className="w-20 h-8 bg-surface-2 rounded-full animate-pulse" />
-                    <div className="w-16 h-8 bg-surface-2 rounded-full animate-pulse" />
+                    <div className="w-3 h-3 rounded-full bg-bg-surface-2 animate-pulse flex-shrink-0" />
+                    <div className="flex-1 h-4 bg-bg-surface-2 rounded animate-pulse" />
+                    <div className="w-16 h-6 bg-bg-surface-2 rounded animate-pulse" />
+                    <div className="w-20 h-8 bg-bg-surface-2 rounded-full animate-pulse" />
+                    <div className="w-16 h-8 bg-bg-surface-2 rounded-full animate-pulse" />
                   </div>
                 ))}
               </div>
             ) : categories.length === 0 ? (
               <div className="px-5 py-10 text-center text-text-muted text-body">
                 No categories yet.{' '}
-                <button className="text-primary underline cursor-pointer" onClick={openCreate}>
+                <button className="text-brand-primary underline cursor-pointer" onClick={openCreate}>
                   Add the first one.
                 </button>
               </div>
             ) : (
-              <div className="divide-y divide-border">
+              <div className="divide-y divide-border-subtle">
                 {categories.map((cat) => (
                   <div
                     key={cat.id}
@@ -1050,7 +1052,7 @@ export function SettingsPage() {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {cat.is80gEligible && (
-                        <span className="px-2 py-0.5 rounded-full text-caption font-medium bg-green-500/10 text-green-400">
+                        <span className="px-2 py-0.5 rounded-full text-caption font-medium bg-success-subtle text-success-fg">
                           80G
                         </span>
                       )}
@@ -1058,8 +1060,8 @@ export function SettingsPage() {
                         className={[
                           'px-2 py-0.5 rounded-full text-caption font-medium',
                           cat.isActive
-                            ? 'bg-primary/10 text-primary'
-                            : 'bg-surface-2 text-text-muted',
+                            ? 'bg-brand-primary/10 text-brand-primary'
+                            : 'bg-bg-surface-2 text-text-muted',
                         ].join(' ')}
                       >
                         {cat.isActive ? 'Active' : 'Inactive'}
@@ -1116,8 +1118,8 @@ export function SettingsPage() {
       {/* Tab: Seva Types */}
       {activeTab === 'seva-types' && (
         <>
-          <section className="rounded-lg bg-surface border border-border">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <section className="rounded-lg bg-bg-surface border border-border-subtle">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border-subtle">
               <div>
                 <h2 className="text-h3 font-semibold text-text-primary">Seva Types</h2>
                 <p className="mt-0.5 text-caption text-text-muted">
@@ -1130,13 +1132,13 @@ export function SettingsPage() {
             </div>
 
             {sevaTypesLoading ? (
-              <div className="divide-y divide-border">
+              <div className="divide-y divide-border-subtle">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div key={i} className="px-5 py-4 flex items-center gap-4">
-                    <div className="flex-1 h-4 bg-surface-2 rounded animate-pulse" />
-                    <div className="w-20 h-6 bg-surface-2 rounded animate-pulse" />
-                    <div className="w-20 h-8 bg-surface-2 rounded-full animate-pulse" />
-                    <div className="w-16 h-8 bg-surface-2 rounded-full animate-pulse" />
+                    <div className="flex-1 h-4 bg-bg-surface-2 rounded animate-pulse" />
+                    <div className="w-20 h-6 bg-bg-surface-2 rounded animate-pulse" />
+                    <div className="w-20 h-8 bg-bg-surface-2 rounded-full animate-pulse" />
+                    <div className="w-16 h-8 bg-bg-surface-2 rounded-full animate-pulse" />
                   </div>
                 ))}
               </div>
@@ -1144,14 +1146,14 @@ export function SettingsPage() {
               <div className="px-5 py-10 text-center text-text-muted text-body">
                 No seva types yet.{' '}
                 <button
-                  className="text-primary underline cursor-pointer"
+                  className="text-brand-primary underline cursor-pointer"
                   onClick={openCreateSeva}
                 >
                   Add the first one.
                 </button>
               </div>
             ) : (
-              <div className="divide-y divide-border">
+              <div className="divide-y divide-border-subtle">
                 {sevaTypes.map((st) => (
                   <div
                     key={st.id}
@@ -1176,12 +1178,12 @@ export function SettingsPage() {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {st.requiresSankalpa && (
-                        <span className="px-2 py-0.5 rounded-full text-caption font-medium bg-primary/10 text-primary">
+                        <span className="px-2 py-0.5 rounded-full text-caption font-medium bg-brand-primary/10 text-brand-primary">
                           Sankalpa
                         </span>
                       )}
                       {st.isOnlineBookable && (
-                        <span className="px-2 py-0.5 rounded-full text-caption font-medium bg-info/10 text-info">
+                        <span className="px-2 py-0.5 rounded-full text-caption font-medium bg-info-subtle text-info-fg">
                           Online
                         </span>
                       )}
@@ -1189,8 +1191,8 @@ export function SettingsPage() {
                         className={[
                           'px-2 py-0.5 rounded-full text-caption font-medium',
                           st.isActive
-                            ? 'bg-primary/10 text-primary'
-                            : 'bg-surface-2 text-text-muted',
+                            ? 'bg-brand-primary/10 text-brand-primary'
+                            : 'bg-bg-surface-2 text-text-muted',
                         ].join(' ')}
                       >
                         {st.isActive ? 'Active' : 'Inactive'}
@@ -1264,8 +1266,8 @@ export function SettingsPage() {
 
       {/* Tab: Website Integration */}
       {activeTab === 'web-integration' && (
-        <section className="rounded-lg bg-surface border border-border">
-          <div className="px-5 py-4 border-b border-border">
+        <section className="rounded-lg bg-bg-surface border border-border-subtle">
+          <div className="px-5 py-4 border-b border-border-subtle">
             <h2 className="text-[18px] font-semibold text-text-primary">Website Integration</h2>
             <p className="text-sm text-text-muted mt-0.5">
               Embed the donation and seva booking portal directly on your temple website.
@@ -1281,13 +1283,13 @@ export function SettingsPage() {
                 <h3 className="text-[15px] font-medium text-text-primary mb-1">Public Portal URL</h3>
                 <p className="text-sm text-text-muted mb-3">Share this link directly or embed it as an iframe.</p>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 text-xs bg-surface-2 border border-border rounded-lg px-3 py-2 font-mono break-all">
+                  <code className="flex-1 text-xs bg-bg-surface-2 border border-border-subtle rounded-lg px-3 py-2 font-mono break-all">
                     {window.location.origin}/portal/{templeProfile.slug}
                   </code>
                   <button
                     type="button"
                     onClick={() => copyToClipboard(`${window.location.origin}/portal/${templeProfile.slug}`, 'url')}
-                    className="flex-shrink-0 px-3 py-2 rounded-lg border border-border text-sm hover:bg-surface-2 transition-colors"
+                    className="flex-shrink-0 px-3 py-2 rounded-lg border border-border-subtle text-sm hover:bg-bg-surface-2 transition-colors text-text-primary"
                   >
                     {copiedKey === 'url' ? '✓ Copied' : 'Copy'}
                   </button>
@@ -1301,7 +1303,7 @@ export function SettingsPage() {
                   Paste this code anywhere on your website to embed the donation portal.
                 </p>
                 <div className="relative">
-                  <pre className="text-xs bg-surface-2 border border-border rounded-lg px-4 py-3 font-mono whitespace-pre-wrap break-all leading-relaxed">
+                  <pre className="text-xs bg-bg-surface-2 border border-border-subtle rounded-lg px-4 py-3 font-mono whitespace-pre-wrap break-all leading-relaxed text-text-primary">
 {`<iframe
   src="${window.location.origin}/portal/${templeProfile.slug}"
   width="100%"
@@ -1316,7 +1318,7 @@ export function SettingsPage() {
                       `<iframe\n  src="${window.location.origin}/portal/${templeProfile.slug}"\n  width="100%"\n  height="700"\n  style="border:none;border-radius:12px;max-width:480px;"\n  title="${templeProfile.name} — Donate &amp; Book Seva"\n></iframe>`,
                       'iframe',
                     )}
-                    className="absolute top-2 right-2 px-3 py-1.5 rounded-lg bg-white border border-border text-xs hover:bg-surface-2 transition-colors shadow-sm"
+                    className="absolute top-2 right-2 px-3 py-1.5 rounded-lg bg-bg-surface border border-border-subtle text-xs text-text-primary hover:bg-bg-surface-2 transition-colors shadow-sm"
                   >
                     {copiedKey === 'iframe' ? '✓ Copied' : 'Copy Code'}
                   </button>
@@ -1328,7 +1330,7 @@ export function SettingsPage() {
                 <h3 className="text-[15px] font-medium text-text-primary mb-1">Donations-Only Embed</h3>
                 <p className="text-sm text-text-muted mb-3">Opens directly on the Donate tab.</p>
                 <div className="relative">
-                  <pre className="text-xs bg-surface-2 border border-border rounded-lg px-4 py-3 font-mono whitespace-pre-wrap break-all leading-relaxed">
+                  <pre className="text-xs bg-bg-surface-2 border border-border-subtle rounded-lg px-4 py-3 font-mono whitespace-pre-wrap break-all leading-relaxed text-text-primary">
 {`<iframe
   src="${window.location.origin}/portal/${templeProfile.slug}?tab=donate"
   width="100%"
@@ -1343,7 +1345,7 @@ export function SettingsPage() {
                       `<iframe\n  src="${window.location.origin}/portal/${templeProfile.slug}?tab=donate"\n  width="100%"\n  height="680"\n  style="border:none;border-radius:12px;max-width:480px;"\n  title="${templeProfile.name} — Donate"\n></iframe>`,
                       'donate',
                     )}
-                    className="absolute top-2 right-2 px-3 py-1.5 rounded-lg bg-white border border-border text-xs hover:bg-surface-2 transition-colors shadow-sm"
+                    className="absolute top-2 right-2 px-3 py-1.5 rounded-lg bg-bg-surface border border-border-subtle text-xs text-text-primary hover:bg-bg-surface-2 transition-colors shadow-sm"
                   >
                     {copiedKey === 'donate' ? '✓ Copied' : 'Copy Code'}
                   </button>
@@ -1355,7 +1357,7 @@ export function SettingsPage() {
                 <h3 className="text-[15px] font-medium text-text-primary mb-1">Seva Booking-Only Embed</h3>
                 <p className="text-sm text-text-muted mb-3">Opens directly on the Book Seva tab.</p>
                 <div className="relative">
-                  <pre className="text-xs bg-surface-2 border border-border rounded-lg px-4 py-3 font-mono whitespace-pre-wrap break-all leading-relaxed">
+                  <pre className="text-xs bg-bg-surface-2 border border-border-subtle rounded-lg px-4 py-3 font-mono whitespace-pre-wrap break-all leading-relaxed text-text-primary">
 {`<iframe
   src="${window.location.origin}/portal/${templeProfile.slug}?tab=seva"
   width="100%"
@@ -1370,15 +1372,15 @@ export function SettingsPage() {
                       `<iframe\n  src="${window.location.origin}/portal/${templeProfile.slug}?tab=seva"\n  width="100%"\n  height="720"\n  style="border:none;border-radius:12px;max-width:480px;"\n  title="${templeProfile.name} — Book Seva"\n></iframe>`,
                       'seva',
                     )}
-                    className="absolute top-2 right-2 px-3 py-1.5 rounded-lg bg-white border border-border text-xs hover:bg-surface-2 transition-colors shadow-sm"
+                    className="absolute top-2 right-2 px-3 py-1.5 rounded-lg bg-bg-surface border border-border-subtle text-xs text-text-primary hover:bg-bg-surface-2 transition-colors shadow-sm"
                   >
                     {copiedKey === 'seva' ? '✓ Copied' : 'Copy Code'}
                   </button>
                 </div>
               </div>
 
-              <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
-                <p className="text-sm text-amber-800">
+              <div className="rounded-lg bg-warning-subtle border border-warning-DEFAULT/30 px-4 py-3">
+                <p className="text-sm text-warning-fg">
                   <span className="font-medium">Note:</span> Online payments require Razorpay to be configured for your temple. Sevas appear only if marked as "Online Bookable" in the Seva Types tab.
                 </p>
               </div>

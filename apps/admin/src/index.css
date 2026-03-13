@@ -2,36 +2,191 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Design tokens ────────────────────────────────────────────────────────────
+   All colours are HSL triples (no `hsl()` wrapper) so Tailwind can apply
+   opacity modifiers:  bg-brand-primary/20  →  hsl(var(--brand-primary) / 0.2)
+   ─────────────────────────────────────────────────────────────────────────── */
+
 @layer base {
+  /* ── Light mode (default) ─────────────────────────────────────── */
+  :root {
+    /* Backgrounds */
+    --bg-page:      220 20% 97%;   /* #F4F5F7  near-white warm */
+    --bg-surface:   0 0% 100%;     /* #FFFFFF  cards, sidebar */
+    --bg-surface-2: 220 14% 96%;   /* #F1F2F5  hover, nested */
+    --bg-surface-3: 220 14% 92%;   /* #E6E8EE  input bg, tags */
+
+    /* Borders */
+    --border-subtle:  220 13% 91%;  /* #E2E5ED */
+    --border-default: 220 13% 84%;  /* #D1D5E0 */
+    --border-strong:  220 13% 70%;  /* #ABB2C8 */
+
+    /* Text */
+    --text-primary:   220 20% 12%;  /* #1A1D27 */
+    --text-secondary: 220 10% 40%;  /* #5A6076 */
+    --text-muted:     220 8%  60%;  /* #8F96A8 */
+    --text-inverse:   0 0% 100%;    /* #FFFFFF */
+
+    /* Brand — saffron per CLAUDE.md */
+    --brand-primary:        20 95% 55%;   /* #FF6B35 */
+    --brand-primary-hover:  20 95% 47%;   /* #E8530A */
+    --brand-primary-subtle: 20 95% 94%;   /* #FDE8D8 */
+    --brand-primary-fg:     0 0% 100%;    /* white text on brand bg */
+
+    /* Semantic states */
+    --success:        142 71% 45%;
+    --success-subtle: 142 60% 94%;
+    --success-fg:     142 71% 28%;
+
+    --warning:        38 92% 50%;
+    --warning-subtle: 38 90% 94%;
+    --warning-fg:     38 92% 28%;
+
+    --danger:         0 84% 60%;
+    --danger-subtle:  0 80% 95%;
+    --danger-fg:      0 84% 38%;
+
+    --info:           217 91% 60%;
+    --info-subtle:    217 85% 95%;
+    --info-fg:        217 91% 35%;
+  }
+
+  /* ── Dark mode ────────────────────────────────────────────────── */
+  .dark {
+    /* Backgrounds */
+    --bg-page:      220 13% 9%;    /* #131519 */
+    --bg-surface:   220 13% 12%;   /* #181B21 */
+    --bg-surface-2: 220 13% 16%;   /* #20242D */
+    --bg-surface-3: 220 13% 20%;   /* #282D38 */
+
+    /* Borders */
+    --border-subtle:  220 13% 20%;  /* #282D38 */
+    --border-default: 220 13% 26%;  /* #353B4A */
+    --border-strong:  220 13% 38%;  /* #4D566A */
+
+    /* Text */
+    --text-primary:   220 14% 93%;  /* #E8EAF0 */
+    --text-secondary: 220 8%  65%;  /* #9AA0B2 */
+    --text-muted:     220 6%  45%;  /* #686E7E */
+    --text-inverse:   220 20% 12%;  /* #1A1D27 */
+
+    /* Brand */
+    --brand-primary:        20 95% 58%;   /* #FF7040 — slightly lighter for dark bg contrast */
+    --brand-primary-hover:  20 95% 50%;   /* #F05A20 */
+    --brand-primary-subtle: 20 60% 15%;   /* #3D1A0A */
+    --brand-primary-fg:     0 0% 100%;
+
+    /* Semantic states — adjusted for dark background */
+    --success:        142 60% 50%;
+    --success-subtle: 142 40% 12%;
+    --success-fg:     142 60% 75%;
+
+    --warning:        38 85% 55%;
+    --warning-subtle: 38 60% 12%;
+    --warning-fg:     38 85% 75%;
+
+    --danger:         0 75% 60%;
+    --danger-subtle:  0 55% 14%;
+    --danger-fg:      0 75% 78%;
+
+    --info:           217 80% 65%;
+    --info-subtle:    217 55% 14%;
+    --info-fg:        217 80% 80%;
+  }
+
+  /* ── Global base styles ───────────────────────────────────────── */
   html {
-    @apply bg-background text-text-primary font-sans;
+    @apply bg-bg-page text-text-primary font-sans;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Smooth colour transitions when toggling theme */
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   * {
-    @apply border-border;
+    @apply border-border-default;
+    /* Inherit theme transition for all elements */
+    transition-property: background-color, border-color;
+    transition-duration: 0.2s;
+    transition-timing-function: ease;
   }
 
-  /* Scrollbar styling for dark theme */
+  /* Opt out of transition on elements where it would look janky */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  /* ── Form inputs — dark mode fix ─────────────────────────────── */
+  input,
+  textarea,
+  select {
+    background-color: hsl(var(--bg-surface-2));
+    color: hsl(var(--text-primary));
+    border-color: hsl(var(--border-default));
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: hsl(var(--text-muted));
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    outline: none;
+    border-color: hsl(var(--brand-primary));
+    box-shadow: 0 0 0 3px hsl(var(--brand-primary) / 0.2);
+    background-color: hsl(var(--bg-surface));
+  }
+
+  /* Fix browser autofill background in dark mode */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: hsl(var(--text-primary));
+    -webkit-box-shadow: 0 0 0px 1000px hsl(var(--bg-surface-2)) inset;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
+  /* ── Scrollbar ────────────────────────────────────────────────── */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    @apply bg-surface;
+    @apply bg-bg-surface;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-border rounded-full;
+    @apply bg-border-default rounded-full;
   }
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-text-muted;
+    @apply bg-border-strong;
   }
 }
 
 @layer components {
-  /* Focus-visible ring using primary color */
+  /* ── Focus ring ────────────────────────────────────────────────── */
   .focus-ring {
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface;
   }
+
+  /* ── Card surface ──────────────────────────────────────────────── */
+  .card {
+    @apply bg-bg-surface border border-border-subtle rounded-lg shadow-card;
+  }
+  .dark .card {
+    @apply shadow-card-dark;
+  }
+
+  /* ── Badge variants ────────────────────────────────────────────── */
+  .badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-caption font-medium;
+  }
+  .badge-success { @apply bg-success-subtle text-success-fg; }
+  .badge-warning { @apply bg-warning-subtle text-warning-fg; }
+  .badge-danger  { @apply bg-danger-subtle  text-danger-fg;  }
+  .badge-info    { @apply bg-info-subtle    text-info-fg;    }
+  .badge-default { @apply bg-bg-surface-3   text-text-secondary; }
 }

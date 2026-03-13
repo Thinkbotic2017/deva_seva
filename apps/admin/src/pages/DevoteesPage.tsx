@@ -24,10 +24,10 @@ function TableSkeleton() {
   return (
     <tbody>
       {Array.from({ length: 8 }).map((_, i) => (
-        <tr key={i} className="border-b border-border">
+        <tr key={i} className="border-b border-border-subtle">
           {Array.from({ length: 6 }).map((_, j) => (
             <td key={j} className="px-4 py-3">
-              <div className="h-4 bg-surface-2 rounded animate-pulse" style={{ width: `${55 + (j * 13) % 45}%` }} />
+              <div className="h-4 bg-bg-surface-2 rounded animate-pulse" style={{ width: `${55 + (j * 13) % 45}%` }} />
             </td>
           ))}
         </tr>
@@ -117,7 +117,7 @@ function DevoteeDetailDrawer({
       {detailLoading ? (
         <div className="p-6 space-y-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-5 bg-surface-2 rounded animate-pulse w-3/4" />
+            <div key={i} className="h-5 bg-bg-surface-2 rounded animate-pulse w-3/4" />
           ))}
         </div>
       ) : devotee ? (
@@ -189,7 +189,7 @@ function DevoteeDetailDrawer({
               <p className="text-caption text-danger">Failed to save. Please try again.</p>
             )}
 
-            <div className="flex gap-3 pt-2 border-t border-border">
+            <div className="flex gap-3 pt-2 border-t border-border-subtle">
               <Button variant="ghost" className="flex-1" onClick={cancelEdit} disabled={updateMutation.isPending}>
                 Cancel
               </Button>
@@ -202,7 +202,7 @@ function DevoteeDetailDrawer({
           /* ── Profile view ───────────────────────────────────────────── */
           <div>
             {/* Profile */}
-            <div className="p-6 border-b border-border space-y-3">
+            <div className="p-6 border-b border-border-subtle space-y-3">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-lg flex-shrink-0">
                   {devotee.name.charAt(0).toUpperCase()}
@@ -238,7 +238,7 @@ function DevoteeDetailDrawer({
               </div>
 
               {devotee.notes && (
-                <p className="text-caption text-text-muted bg-surface-2 rounded-md p-3 mt-1">
+                <p className="text-caption text-text-muted bg-bg-surface-2 rounded-md p-3 mt-1">
                   {devotee.notes}
                 </p>
               )}
@@ -255,7 +255,7 @@ function DevoteeDetailDrawer({
               ) : (
                 <div className="space-y-2">
                   {devotee.recentDonations.map((d) => (
-                    <div key={d.id} className="flex items-center justify-between p-3 rounded-md bg-surface-2">
+                    <div key={d.id} className="flex items-center justify-between p-3 rounded-md bg-bg-surface-2">
                       <div>
                         <p className="text-body text-text-primary">
                           {d.category?.name ?? 'Donation'}
@@ -295,7 +295,7 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
 
 function StatBox({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-surface-2 rounded-md p-3 text-center">
+    <div className="bg-bg-surface-2 rounded-md p-3 text-center">
       <p className="text-h3 font-bold text-text-primary">{value}</p>
       <p className="text-caption text-text-muted mt-0.5">{label}</p>
     </div>
@@ -322,7 +322,7 @@ export function DevoteesPage() {
       </div>
 
       {/* Search */}
-      <div className="flex gap-3 rounded-lg bg-surface border border-border p-4">
+      <div className="flex gap-3 rounded-lg bg-bg-surface border border-border-subtle p-4">
         <div className="flex-1 max-w-sm">
           <Input
             label="Search"
@@ -346,11 +346,11 @@ export function DevoteesPage() {
       </div>
 
       {/* Table */}
-      <div className="rounded-lg bg-surface border border-border overflow-hidden">
+      <div className="rounded-lg bg-bg-surface border border-border-subtle overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-body">
             <thead>
-              <tr className="border-b border-border bg-surface-2">
+              <tr className="border-b border-border-subtle bg-bg-surface-2">
                 <th className="px-4 py-3 text-left text-caption text-text-muted font-medium uppercase tracking-wide">Name</th>
                 <th className="px-4 py-3 text-left text-caption text-text-muted font-medium uppercase tracking-wide">Phone</th>
                 <th className="px-4 py-3 text-left text-caption text-text-muted font-medium uppercase tracking-wide">Tier</th>
@@ -383,7 +383,7 @@ export function DevoteesPage() {
                 {data.data.map((d: Devotee) => (
                   <tr
                     key={d.id}
-                    className="border-b border-border hover:bg-surface-2 transition-colors cursor-pointer"
+                    className="border-b border-border-subtle hover:bg-bg-surface-2 transition-colors cursor-pointer"
                     onClick={() => setSelectedDevoteeId(d.id)}
                   >
                     <td className="px-4 py-3">

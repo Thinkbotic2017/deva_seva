@@ -24,18 +24,18 @@ const MODE_OPTIONS = [
 ];
 
 const STATUS_OPTIONS = [
-  { value: 'PENDING',            label: 'Pending'          },
-  { value: 'CONFIRMED',          label: 'Confirmed'        },
-  { value: 'RECEIPT_GENERATED',  label: 'Receipt Generated'},
-  { value: 'RECEIPT_SENT',       label: 'Receipt Sent'     },
-  { value: 'CANCELLED',          label: 'Cancelled'        },
+  { value: 'PENDING',           label: 'Pending'           },
+  { value: 'CONFIRMED',         label: 'Confirmed'         },
+  { value: 'RECEIPT_GENERATED', label: 'Receipt Generated' },
+  { value: 'RECEIPT_SENT',      label: 'Receipt Sent'      },
+  { value: 'CANCELLED',         label: 'Cancelled'         },
 ];
 
 function todayIST(): string {
-  const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+  const nowIST = new Date(Date.now() + (5 * 60 + 30) * 60 * 1000);
   const yyyy = nowIST.getUTCFullYear();
-  const mm = String(nowIST.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(nowIST.getUTCDate()).padStart(2, '0');
+  const mm   = String(nowIST.getUTCMonth() + 1).padStart(2, '0');
+  const dd   = String(nowIST.getUTCDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
 }
 
@@ -66,15 +66,58 @@ function TableSkeleton() {
   return (
     <tbody>
       {Array.from({ length: 8 }).map((_, i) => (
-        <tr key={i} className="border-b border-border">
+        <tr key={i} className="border-b border-border-subtle">
           {Array.from({ length: 7 }).map((_, j) => (
             <td key={j} className="px-4 py-3">
-              <div className="h-4 bg-surface-2 rounded animate-pulse" style={{ width: `${60 + (j * 13) % 40}%` }} />
+              <div
+                className="h-4 bg-bg-surface-2 rounded animate-pulse"
+                style={{ width: `${60 + (j * 13) % 40}%` }}
+              />
             </td>
           ))}
         </tr>
       ))}
     </tbody>
+  );
+}
+
+// ─── Mobile card (shown instead of table row on small screens) ────────────────
+
+function DonationCard({
+  d,
+  categoryName,
+}: {
+  d: { id: string; receiptNumber?: string; donorName: string; donorPhone?: string; amount: string; mode: string; status: string; paymentDate: string; is80gEligible: boolean };
+  categoryName: string;
+}) {
+  return (
+    <div className="p-4 border-b border-border-subtle last:border-0">
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <div className="min-w-0">
+          <p className="text-label text-text-primary truncate">{d.donorName}</p>
+          {d.donorPhone && <p className="text-caption text-text-muted">{d.donorPhone}</p>}
+        </div>
+        <div className="text-right flex-shrink-0">
+          <p className="text-label font-semibold text-text-primary">
+            ₹{parseFloat(d.amount).toLocaleString('en-IN')}
+          </p>
+          {d.is80gEligible && (
+            <span className="text-caption text-info-DEFAULT">80G</span>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center gap-2 flex-wrap mt-2">
+        <Badge label={d.status} />
+        <span className="text-caption text-text-muted">{d.mode}</span>
+        <span className="text-caption text-text-muted">·</span>
+        <span className="text-caption text-text-muted">{categoryName}</span>
+        <span className="text-caption text-text-muted">·</span>
+        <span className="text-caption text-text-muted">{formatDateString(d.paymentDate)}</span>
+      </div>
+      {d.receiptNumber && (
+        <p className="mt-1 text-caption text-text-muted font-mono">{d.receiptNumber}</p>
+      )}
+    </div>
   );
 }
 
@@ -116,7 +159,6 @@ export function DonationsPage() {
     const cleaned = rawValue.replace(/\D/g, '');
 
     if (cleaned.length === 0) {
-      // Phone cleared — undo any autofill that was applied
       if (devoteeStatus === 'found') {
         setForm((prev) => ({ ...prev, donorPhone: rawValue, donorName: '', pan: '' }));
       }
@@ -126,24 +168,21 @@ export function DonationsPage() {
       return;
     }
 
-    // Only trigger lookup on a complete, valid Indian mobile number
     if (!/^[6-9]\d{9}$/.test(cleaned)) return;
 
     try {
       const result = await apiGet<{ data: DevoteeDetail[]; total: number }>('/devotees', { search: cleaned, limit: 1 });
       if (!result.data.length) throw new Error('not found');
-      const devotee = result.data[0];
+      const devotee = result.data[0]!;
       setDevoteeId(devotee.id);
       setDevoteeFoundName(devotee.name);
       setDevoteeStatus('found');
-      // Autofill name and PAN — fields remain editable after
       setForm((prev) => ({
         ...prev,
         donorName: devotee.name,
         pan: devotee.panNumberMasked ?? prev.pan,
       }));
     } catch {
-      // 404 = devotee not on record; any network error treated the same way
       setDevoteeId(null);
       setDevoteeFoundName('');
       setDevoteeStatus('new');
@@ -173,13 +212,11 @@ export function DonationsPage() {
       donorPhone: form.donorPhone || undefined,
       pan: form.pan || undefined,
       notes: form.notes || undefined,
-      // devoteeId only when found — backend links new devotees separately
       devoteeId: devoteeStatus === 'found' ? (devoteeId ?? undefined) : undefined,
     };
 
     createMutation.mutate(dto, {
       onSuccess: (createdDonation) => {
-        // Fire-and-forget: register new devotee after donation is saved
         if (devoteeStatus === 'new' && form.donorPhone) {
           const cleaned = form.donorPhone.replace(/\D/g, '');
           if (/^[6-9]\d{9}$/.test(cleaned)) {
@@ -191,7 +228,7 @@ export function DonationsPage() {
                 });
                 await apiPatch(`/donations/${createdDonation.id}/devotee`, { devoteeId: newDevotee.id });
               } catch {
-                // silently ignore — donation is already saved
+                // silently ignore — donation already saved
               }
             })();
           }
@@ -218,7 +255,7 @@ export function DonationsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 rounded-lg bg-surface border border-border p-4">
+      <div className="flex flex-wrap gap-3 rounded-lg bg-bg-surface border border-border-subtle p-4">
         <div className="flex-1 min-w-[140px]">
           <Input
             label="From date"
@@ -272,12 +309,14 @@ export function DonationsPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="rounded-lg bg-surface border border-border overflow-hidden">
-        <div className="overflow-x-auto">
+      {/* Table — hidden on mobile; cards shown instead */}
+      <div className="rounded-lg bg-bg-surface border border-border-subtle overflow-hidden">
+
+        {/* ── Desktop table ── */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-body">
             <thead>
-              <tr className="border-b border-border bg-surface-2">
+              <tr className="border-b border-border-subtle bg-bg-surface-2">
                 <th className="px-4 py-3 text-left text-caption text-text-muted font-medium uppercase tracking-wide">Receipt #</th>
                 <th className="px-4 py-3 text-left text-caption text-text-muted font-medium uppercase tracking-wide">Donor</th>
                 <th className="px-4 py-3 text-left text-caption text-text-muted font-medium uppercase tracking-wide">Category</th>
@@ -293,7 +332,7 @@ export function DonationsPage() {
             ) : isError ? (
               <tbody>
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-danger text-body">
+                  <td colSpan={7} className="px-4 py-12 text-center text-danger-DEFAULT text-body">
                     Failed to load donations. Please try again.
                   </td>
                 </tr>
@@ -309,7 +348,7 @@ export function DonationsPage() {
             ) : (
               <tbody>
                 {data.data.map((d) => (
-                  <tr key={d.id} className="border-b border-border hover:bg-surface-2 transition-colors">
+                  <tr key={d.id} className="border-b border-border-subtle hover:bg-bg-surface-2 transition-colors">
                     <td className="px-4 py-3 text-caption text-text-muted font-mono">
                       {d.receiptNumber ?? '—'}
                     </td>
@@ -327,7 +366,7 @@ export function DonationsPage() {
                         ₹{parseFloat(d.amount).toLocaleString('en-IN')}
                       </span>
                       {d.is80gEligible && (
-                        <span className="ml-1.5 text-caption text-info">80G</span>
+                        <span className="ml-1.5 text-caption text-info-DEFAULT">80G</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-body text-text-secondary">{d.mode}</td>
@@ -344,6 +383,37 @@ export function DonationsPage() {
           </table>
         </div>
 
+        {/* ── Mobile cards ── */}
+        <div className="sm:hidden">
+          {isLoading ? (
+            <div className="divide-y divide-border-subtle">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="p-4 space-y-2">
+                  <div className="flex justify-between">
+                    <div className="h-4 w-32 bg-bg-surface-2 rounded animate-pulse" />
+                    <div className="h-4 w-16 bg-bg-surface-2 rounded animate-pulse" />
+                  </div>
+                  <div className="h-3 w-48 bg-bg-surface-2 rounded animate-pulse" />
+                </div>
+              ))}
+            </div>
+          ) : isError ? (
+            <p className="px-4 py-12 text-center text-danger-DEFAULT text-body">
+              Failed to load donations. Please try again.
+            </p>
+          ) : !data?.data.length ? (
+            <p className="px-4 py-12 text-center text-text-muted text-body">No donations found</p>
+          ) : (
+            data.data.map((d) => (
+              <DonationCard
+                key={d.id}
+                d={d}
+                categoryName={categories.find((c) => c.id === d.categoryId)?.name ?? '—'}
+              />
+            ))
+          )}
+        </div>
+
         {meta && (
           <Pagination
             page={meta.page}
@@ -358,7 +428,7 @@ export function DonationsPage() {
       {/* Create donation modal */}
       <Modal isOpen={isModalOpen} onClose={closeModal} title="Record Donation">
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Input
                 label="Phone"
@@ -369,10 +439,10 @@ export function DonationsPage() {
                 error={formErrors.donorPhone}
               />
               {devoteeStatus === 'found' && (
-                <p className="mt-1 text-caption text-green-600">✓ Devotee found: {devoteeFoundName}</p>
+                <p className="mt-1 text-caption text-success-DEFAULT">✓ Devotee found: {devoteeFoundName}</p>
               )}
               {devoteeStatus === 'new' && (
-                <p className="mt-1 text-caption text-amber-600">New devotee — will be registered on save</p>
+                <p className="mt-1 text-caption text-warning-DEFAULT">New devotee — will be registered on save</p>
               )}
             </div>
             <Input
@@ -401,7 +471,7 @@ export function DonationsPage() {
             error={formErrors.categoryId}
           />
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               label="Amount (₹) *"
               type="number"
@@ -437,25 +507,16 @@ export function DonationsPage() {
           />
 
           {createMutation.isError && (
-            <p className="text-caption text-danger">
+            <p className="text-caption text-danger-DEFAULT">
               Failed to record donation. Please try again.
             </p>
           )}
 
-          <div className="flex gap-3 pt-2 border-t border-border">
-            <Button
-              type="button"
-              variant="ghost"
-              className="flex-1"
-              onClick={closeModal}
-            >
+          <div className="flex gap-3 pt-2 border-t border-border-subtle">
+            <Button type="button" variant="ghost" className="flex-1" onClick={closeModal}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              className="flex-1"
-              loading={createMutation.isPending}
-            >
+            <Button type="submit" className="flex-1" loading={createMutation.isPending}>
               Record Donation
             </Button>
           </div>
