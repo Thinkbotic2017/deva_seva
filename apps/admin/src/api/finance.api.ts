@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiGet, apiPost } from '@/lib/api-client';
+import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api-client';
 import type { PaginatedResult } from './donations.api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -8,6 +8,24 @@ export interface FinanceCategory {
   id: string;
   name: string;
   type: 'INCOME' | 'EXPENSE';
+  isActive: boolean;
+  isSystem: boolean;
+  sortOrder: number;
+  color?: string;
+}
+
+export interface CreateFinanceCategoryDto {
+  name: string;
+  type: 'INCOME' | 'EXPENSE';
+  sortOrder?: number;
+  color?: string;
+}
+
+export interface UpdateFinanceCategoryDto {
+  name?: string;
+  isActive?: boolean;
+  sortOrder?: number;
+  color?: string;
 }
 
 export interface LedgerEntry {
@@ -19,7 +37,9 @@ export interface LedgerEntry {
   isAutoPosted: boolean;
   expenseStatus: string | null;
   fiscalYear: string;
-  category?: { name: string };
+  categoryId?: string;
+  donationId?: string;
+  sevaBookingId?: string;
   fund?: { name: string };
   createdAt: string;
 }
@@ -41,8 +61,9 @@ export interface LedgerFilters {
 }
 
 export interface CreateLedgerEntryDto {
+  type: 'INCOME' | 'EXPENSE';
   amount: number;
-  categoryId: string;
+  categoryId?: string;
   description: string;
   entryDate: string;
   notes?: string;
@@ -86,10 +107,55 @@ export function useFinanceCategories(type?: 'INCOME' | 'EXPENSE') {
   });
 }
 
+/** Returns ALL categories for a type (including inactive) for the Settings admin UI. */
+export function useFinanceCategoriesAdmin(type: 'INCOME' | 'EXPENSE') {
+  return useQuery({
+    queryKey: ['finance', 'categories-admin', type],
+    queryFn: () =>
+      apiGet<FinanceCategory[]>('/finance/categories', { type, includeInactive: 'true' }),
+    staleTime: 0,
+  });
+}
+
+export function useCreateFinanceCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: CreateFinanceCategoryDto) =>
+      apiPost<FinanceCategory>('/finance/categories', dto),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: financeKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ['finance', 'categories-admin'] });
+    },
+  });
+}
+
+export function useUpdateFinanceCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: UpdateFinanceCategoryDto }) =>
+      apiPatch<FinanceCategory>(`/finance/categories/${id}`, dto),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: financeKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ['finance', 'categories-admin'] });
+    },
+  });
+}
+
+export function useDeleteFinanceCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiDelete(`/finance/categories/${id}`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: financeKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ['finance', 'categories-admin'] });
+    },
+  });
+}
+
 export function useCreateExpense() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (dto: CreateLedgerEntryDto) => apiPost<LedgerEntry>('/finance/expenses', dto),
+    mutationFn: (dto: CreateLedgerEntryDto) => apiPost<LedgerEntry>('/finance/ledger', dto),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: financeKeys.all });
     },
@@ -99,7 +165,7 @@ export function useCreateExpense() {
 export function useCreateIncome() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (dto: CreateLedgerEntryDto) => apiPost<LedgerEntry>('/finance/income', dto),
+    mutationFn: (dto: CreateLedgerEntryDto) => apiPost<LedgerEntry>('/finance/ledger', dto),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: financeKeys.all });
     },

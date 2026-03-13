@@ -108,7 +108,7 @@ export class SevaTypeService {
     if (availableDays !== undefined) sevaType.availableDays = availableDays;
     if (availableTimeSlots !== undefined) sevaType.availableTimeSlots = availableTimeSlots as TimeSlot[];
     if (sortOrder !== undefined) sevaType.sortOrder = sortOrder;
-    if (isActive !== undefined) sevaType.isActive = isActive;
+    if (isActive !== undefined) sevaType.isActive = isActive; 
 
     const saved = await this.sevaTypeRepo.save(sevaType);
     this.logger.log(`Seva type ${id} updated for temple ${templeId}`);

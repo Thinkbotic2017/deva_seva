@@ -8,7 +8,7 @@ import { Pagination } from '@/components/ui/Pagination';
 import {
   useFinanceLedger, useFinanceSummary, useFinanceCategories,
   useCreateExpense, useCreateIncome,
-  type LedgerFilters, type CreateLedgerEntryDto,
+  type LedgerFilters, type CreateLedgerEntryDto, type LedgerEntry,
 } from '@/api/finance.api';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -24,9 +24,10 @@ function currentMonthRange(): { from: string; to: string } {
 const today = new Date().toISOString().split('T')[0];
 const { from: defaultFrom, to: defaultTo } = currentMonthRange();
 
-const EMPTY_FORM: CreateLedgerEntryDto = {
+type EntryFormState = Omit<CreateLedgerEntryDto, 'type'>;
+
+const EMPTY_FORM: EntryFormState = {
   amount: 0,
-  categoryId: '',
   description: '',
   entryDate: today,
 };
@@ -84,8 +85,8 @@ function EntryForm({
   type: 'INCOME' | 'EXPENSE';
   onClose: () => void;
 }) {
-  const [form, setForm] = useState<CreateLedgerEntryDto>(EMPTY_FORM);
-  const [errors, setErrors] = useState<Partial<Record<keyof CreateLedgerEntryDto, string>>>({});
+  const [form, setForm] = useState<EntryFormState>(EMPTY_FORM);
+  const [errors, setErrors] = useState<Partial<Record<keyof EntryFormState, string>>>({});
 
   const { data: categories = [] } = useFinanceCategories(type);
   const createExpense = useCreateExpense();
@@ -94,22 +95,29 @@ function EntryForm({
 
   const categoryOptions = categories.map((c) => ({ value: c.id, label: c.name }));
 
-  function setField<K extends keyof CreateLedgerEntryDto>(key: K, value: CreateLedgerEntryDto[K]) {
+  function setField<K extends keyof EntryFormState>(key: K, value: EntryFormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: undefined }));
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const errs: Partial<Record<keyof CreateLedgerEntryDto, string>> = {};
+    const errs: Partial<Record<keyof EntryFormState, string>> = {};
     if (!form.amount || form.amount <= 0) errs.amount = 'Enter a valid amount';
-    if (!form.categoryId) errs.categoryId = 'Select a category';
     if (!form.description.trim()) errs.description = 'Description is required';
     if (!form.entryDate) errs.entryDate = 'Entry date is required';
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
-    mutation.mutate(form, {
+    const dto: CreateLedgerEntryDto = {
+      type,
+      amount: form.amount,
+      description: form.description.trim(),
+      entryDate: form.entryDate,
+      ...(form.categoryId ? { categoryId: form.categoryId } : {}),
+      ...(form.notes ? { notes: form.notes } : {}),
+    };
+    mutation.mutate(dto, {
       onSuccess: () => {
         setForm(EMPTY_FORM);
         onClose();
@@ -139,11 +147,11 @@ function EntryForm({
       </div>
 
       <Select
-        label="Category *"
+        label="Category"
         options={categoryOptions}
-        placeholder="Select category"
-        value={form.categoryId}
-        onChange={(e) => setField('categoryId', e.target.value)}
+        placeholder="No category"
+        value={form.categoryId ?? ''}
+        onChange={(e) => setField('categoryId', e.target.value || undefined)}
         error={errors.categoryId}
       />
 
@@ -179,18 +187,75 @@ function EntryForm({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 type ModalType = 'INCOME' | 'EXPENSE' | null;
+type SourceFilter = '' | 'manual' | 'donation' | 'seva';
+
+/** Returns what to display in the Category column for a single ledger row. */
+function CategoryCell({
+  entry,
+  categoryMap,
+}: {
+  entry: LedgerEntry;
+  categoryMap: Record<string, { name: string; color?: string }>;
+}) {
+  if (entry.isAutoPosted) {
+    if (entry.donationId) {
+      return (
+        <span className="px-2 py-0.5 rounded-full text-caption font-medium bg-primary/10 text-primary">
+          Donation
+        </span>
+      );
+    }
+    if (entry.sevaBookingId) {
+      return (
+        <span className="px-2 py-0.5 rounded-full text-caption font-medium bg-info/10 text-info">
+          Seva Booking
+        </span>
+      );
+    }
+    return <span className="text-text-muted">—</span>;
+  }
+  if (entry.categoryId && categoryMap[entry.categoryId]) {
+    const { name, color } = categoryMap[entry.categoryId];
+    return (
+      <span
+        className="px-2 py-0.5 rounded-full text-caption font-medium"
+        style={{ backgroundColor: `${color ?? '#6366F1'}20`, color: color ?? '#6366F1' }}
+      >
+        {name}
+      </span>
+    );
+  }
+  return <span className="text-text-muted">—</span>;
+}
 
 export function FinancePage() {
   const [filters, setFilters] = useState<LedgerFilters>({
     page: 1, limit: 20, fromDate: defaultFrom, toDate: defaultTo,
   });
   const [openModal, setOpenModal] = useState<ModalType>(null);
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('');
 
   const { data, isLoading, isError } = useFinanceLedger(filters);
   const { data: summary, isLoading: summaryLoading } = useFinanceSummary(
     filters.fromDate ?? defaultFrom,
     filters.toDate ?? defaultTo,
   );
+  const { data: incomeCategories = [] } = useFinanceCategories('INCOME');
+  const { data: expenseCategories = [] } = useFinanceCategories('EXPENSE');
+
+  const categoryMap: Record<string, { name: string; color?: string }> = {};
+  for (const c of incomeCategories)  categoryMap[c.id] = { name: c.name, color: c.color };
+  for (const c of expenseCategories) categoryMap[c.id] = { name: c.name, color: c.color };
+
+  const allRows = data?.data ?? [];
+  const filteredRows = sourceFilter === ''
+    ? allRows
+    : allRows.filter((e) => {
+        if (sourceFilter === 'manual')   return !e.isAutoPosted;
+        if (sourceFilter === 'donation') return Boolean(e.donationId);
+        if (sourceFilter === 'seva')     return Boolean(e.sevaBookingId);
+        return true;
+      });
 
   const meta = data?.meta;
 
@@ -275,6 +340,19 @@ export function FinancePage() {
             }
           />
         </div>
+        <div className="flex-1 min-w-[160px]">
+          <Select
+            label="Source"
+            options={[
+              { value: 'manual',   label: 'Manual'       },
+              { value: 'donation', label: 'Donation'     },
+              { value: 'seva',     label: 'Seva Booking' },
+            ]}
+            placeholder="All sources"
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value as SourceFilter)}
+          />
+        </div>
       </div>
 
       {/* Ledger table */}
@@ -301,7 +379,7 @@ export function FinancePage() {
                   </td>
                 </tr>
               </tbody>
-            ) : !data?.data.length ? (
+            ) : filteredRows.length === 0 ? (
               <tbody>
                 <tr>
                   <td colSpan={5} className="px-4 py-12 text-center text-text-muted text-body">
@@ -311,7 +389,7 @@ export function FinancePage() {
               </tbody>
             ) : (
               <tbody>
-                {data.data.map((entry) => (
+                {filteredRows.map((entry) => (
                   <tr key={entry.id} className="border-b border-border hover:bg-surface-2 transition-colors">
                     <td className="px-4 py-3 text-caption text-text-muted whitespace-nowrap">
                       {new Date(entry.entryDate).toLocaleDateString('en-IN', {
@@ -325,7 +403,7 @@ export function FinancePage() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-body text-text-secondary">
-                      {entry.category?.name ?? '—'}
+                      <CategoryCell entry={entry} categoryMap={categoryMap} />
                     </td>
                     <td className="px-4 py-3">
                       <Badge

@@ -20,19 +20,52 @@ import {
   type SevaFrequency,
   type CreateSevaTypeDto,
 } from '@/api/sevas.api';
+import {
+  useFinanceCategoriesAdmin,
+  useCreateFinanceCategory,
+  useUpdateFinanceCategory,
+  useDeleteFinanceCategory,
+  type FinanceCategory,
+  type CreateFinanceCategoryDto,
+} from '@/api/finance.api';
+
+// ─── Tab definition ───────────────────────────────────────────────────────────
+
+type Tab = 'donation-cats' | 'seva-types' | 'income-cats' | 'expense-cats';
+
+const TABS: Array<{ id: Tab; label: string }> = [
+  { id: 'donation-cats', label: 'Donation Categories' },
+  { id: 'seva-types',    label: 'Seva Types'          },
+  { id: 'income-cats',   label: 'Income Categories'   },
+  { id: 'expense-cats',  label: 'Expense Categories'  },
+];
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const PRESET_COLORS = [
-  { hex: '#E8530A', label: 'Saffron'  },
-  { hex: '#C49A00', label: 'Gold'     },
-  { hex: '#1455A0', label: 'Blue'     },
-  { hex: '#16A34A', label: 'Green'    },
-  { hex: '#9333EA', label: 'Purple'   },
-  { hex: '#0891B2', label: 'Cyan'     },
-  { hex: '#DC2626', label: 'Red'      },
-  { hex: '#64748B', label: 'Slate'    },
+  { hex: '#E8530A', label: 'Saffron'     },
+  { hex: '#C49A00', label: 'Gold'        },
+  { hex: '#1455A0', label: 'Blue'        },
+  { hex: '#16A34A', label: 'Green'       },
+  { hex: '#9333EA', label: 'Purple'      },
+  { hex: '#0891B2', label: 'Cyan'        },
+  { hex: '#DC2626', label: 'Red'         },
+  { hex: '#64748B', label: 'Slate'       },
+  { hex: '#6366F1', label: 'Indigo'      },
+  { hex: '#EC4899', label: 'Pink'        },
+  { hex: '#F59E0B', label: 'Amber'       },
+  { hex: '#10B981', label: 'Emerald'     },
+  { hex: '#14B8A6', label: 'Teal'        },
+  { hex: '#F97316', label: 'Orange'      },
+  { hex: '#8B5CF6', label: 'Violet'      },
+  { hex: '#EF4444', label: 'Rose Red'    },
+  { hex: '#78716C', label: 'Stone'       },
+  { hex: '#0369A1', label: 'Sky Blue'    },
+  { hex: '#7C3AED', label: 'Deep Violet' },
+  { hex: '#047857', label: 'Deep Green'  },
 ];
+
+// ─── Donation Category modal ──────────────────────────────────────────────────
 
 interface CategoryForm {
   name: string;
@@ -49,8 +82,6 @@ const EMPTY_FORM: CategoryForm = {
   color: '#E8530A',
   sortOrder: 0,
 };
-
-// ─── Category form modal ──────────────────────────────────────────────────────
 
 interface CategoryModalProps {
   isOpen: boolean;
@@ -74,7 +105,6 @@ function CategoryModal({
       width="max-w-md"
     >
       <div className="px-6 py-5 space-y-5">
-        {/* Name */}
         <Input
           label="Name *"
           value={form.name}
@@ -83,7 +113,6 @@ function CategoryModal({
           error={errors.name}
         />
 
-        {/* Description */}
         <div className="flex flex-col gap-1.5">
           <label className="text-label text-text-secondary">Description</label>
           <textarea
@@ -100,7 +129,6 @@ function CategoryModal({
           />
         </div>
 
-        {/* Color swatches */}
         <div className="flex flex-col gap-2">
           <span className="text-label text-text-secondary">Colour</span>
           <div className="flex flex-wrap gap-2">
@@ -122,7 +150,6 @@ function CategoryModal({
           </div>
         </div>
 
-        {/* Sort order */}
         <Input
           label="Sort Order"
           type="number"
@@ -132,7 +159,6 @@ function CategoryModal({
           hint="Lower numbers appear first in the counter UI"
         />
 
-        {/* 80G toggle */}
         <label className="flex items-center gap-3 cursor-pointer select-none">
           <div
             role="switch"
@@ -156,7 +182,6 @@ function CategoryModal({
           </span>
         </label>
 
-        {/* Actions */}
         <div className="flex justify-end gap-3 pt-2">
           <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
             Cancel
@@ -170,7 +195,7 @@ function CategoryModal({
   );
 }
 
-// ─── Seva Type form modal ─────────────────────────────────────────────────────
+// ─── Seva Type modal ──────────────────────────────────────────────────────────
 
 const FREQUENCY_OPTIONS: Array<{ value: SevaFrequency; label: string }> = [
   { value: 'DAILY',     label: 'Daily'     },
@@ -416,9 +441,323 @@ function SevaTypeModal({
   );
 }
 
+// ─── Finance Category modal (Income / Expense) ────────────────────────────────
+
+interface FinanceCatForm {
+  name: string;
+  sortOrder: number;
+  color: string;
+}
+
+const EMPTY_FINANCE_FORM: FinanceCatForm = { name: '', sortOrder: 0, color: '#6366F1' };
+
+interface FinanceCatModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  editing: FinanceCategory | null;
+  form: FinanceCatForm;
+  onSetField: <K extends keyof FinanceCatForm>(key: K, value: FinanceCatForm[K]) => void;
+  onSubmit: () => void;
+  isSubmitting: boolean;
+  errors: Partial<Record<keyof FinanceCatForm, string>>;
+  typeLabel: string;
+  usedColors: string[];
+}
+
+function FinanceCatModal({
+  isOpen, onClose, editing, form, onSetField, onSubmit, isSubmitting, errors, typeLabel, usedColors,
+}: FinanceCatModalProps) {
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={editing ? `Edit ${typeLabel} Category` : `Add ${typeLabel} Category`}
+      width="max-w-sm"
+    >
+      <div className="px-6 py-5 space-y-4">
+        <Input
+          label="Name *"
+          value={form.name}
+          onChange={(e) => onSetField('name', e.target.value)}
+          placeholder={typeLabel === 'Income' ? 'e.g. Temple Donations' : 'e.g. Utilities'}
+          error={errors.name}
+        />
+
+        <div className="flex flex-col gap-2">
+          <span className="text-label text-text-secondary">Colour</span>
+          <div className="flex flex-wrap gap-2">
+            {PRESET_COLORS.map(({ hex, label }) => {
+              const isUsedByOther = usedColors.includes(hex);
+              return (
+                <button
+                  key={hex}
+                  type="button"
+                  title={isUsedByOther ? `${label} (already used)` : label}
+                  onClick={() => onSetField('color', hex)}
+                  disabled={isUsedByOther}
+                  className={[
+                    'w-7 h-7 rounded-full border-2 transition-all duration-150',
+                    form.color === hex
+                      ? 'border-text-primary scale-110'
+                      : isUsedByOther
+                        ? 'border-transparent opacity-25 cursor-not-allowed'
+                        : 'border-transparent hover:scale-105',
+                  ].join(' ')}
+                  style={{ backgroundColor: hex }}
+                />
+              );
+            })}
+          </div>
+        </div>
+
+        <Input
+          label="Sort Order"
+          type="number"
+          min={0}
+          value={form.sortOrder}
+          onChange={(e) => onSetField('sortOrder', parseInt(e.target.value, 10) || 0)}
+          hint="Lower numbers appear first"
+        />
+        <div className="flex justify-end gap-3 pt-2">
+          <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button onClick={onSubmit} loading={isSubmitting}>
+            {editing ? 'Save Changes' : `Add Category`}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// ─── Finance Category section (reusable for Income + Expense) ─────────────────
+
+interface FinanceCatSectionProps {
+  type: 'INCOME' | 'EXPENSE';
+  typeLabel: string;
+  description: string;
+}
+
+function FinanceCatSection({ type, typeLabel, description }: FinanceCatSectionProps) {
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<FinanceCategory | null>(null);
+  const [form, setForm] = useState<FinanceCatForm>(EMPTY_FINANCE_FORM);
+  const [formErrors, setFormErrors] = useState<Partial<Record<keyof FinanceCatForm, string>>>({});
+
+  const { data: categories = [], isLoading } = useFinanceCategoriesAdmin(type);
+  const createMutation = useCreateFinanceCategory();
+  const updateMutation = useUpdateFinanceCategory();
+  const deleteMutation = useDeleteFinanceCategory();
+
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+
+  function setField<K extends keyof FinanceCatForm>(key: K, value: FinanceCatForm[K]) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setFormErrors((prev) => ({ ...prev, [key]: undefined }));
+  }
+
+  function openCreate() {
+    setEditing(null);
+    setForm(EMPTY_FINANCE_FORM);
+    setFormErrors({});
+    setModalOpen(true);
+  }
+
+  function openEdit(cat: FinanceCategory) {
+    setEditing(cat);
+    setForm({ name: cat.name, sortOrder: cat.sortOrder, color: cat.color ?? '#6366F1' });
+    setFormErrors({});
+    setModalOpen(true);
+  }
+
+  function closeModal() {
+    setModalOpen(false);
+    setEditing(null);
+    setForm(EMPTY_FINANCE_FORM);
+    setFormErrors({});
+  }
+
+  function validate(): boolean {
+    const errors: Partial<Record<keyof FinanceCatForm, string>> = {};
+    if (!form.name.trim()) errors.name = 'Name is required';
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return false;
+    }
+    return true;
+  }
+
+  async function handleSubmit() {
+    if (!validate()) return;
+    if (editing) {
+      await updateMutation.mutateAsync({
+        id: editing.id,
+        dto: { name: form.name.trim(), sortOrder: form.sortOrder, color: form.color },
+      });
+    } else {
+      const dto: CreateFinanceCategoryDto = {
+        name: form.name.trim(),
+        type,
+        sortOrder: form.sortOrder,
+        color: form.color,
+      };
+      await createMutation.mutateAsync(dto);
+    }
+    closeModal();
+  }
+
+  async function handleToggleActive(cat: FinanceCategory) {
+    if (cat.isSystem) return; // system categories are immutable
+    if (cat.isActive) {
+      const confirmed = window.confirm(
+        `Deactivate "${cat.name}"? It will no longer appear in the finance entry form.`,
+      );
+      if (!confirmed) return;
+    }
+    await updateMutation.mutateAsync({ id: cat.id, dto: { isActive: !cat.isActive } });
+  }
+
+  async function handleDelete(cat: FinanceCategory) {
+    if (cat.isSystem) return;
+    const confirmed = window.confirm(
+      `Deactivate "${cat.name}"? System categories cannot be deleted — this will hide it from forms.`,
+    );
+    if (!confirmed) return;
+    await deleteMutation.mutateAsync(cat.id);
+  }
+
+  const usedColors = categories
+    .filter((c) => c.id !== editing?.id)
+    .map((c) => c.color)
+    .filter((c): c is string => Boolean(c));
+
+  return (
+    <>
+      <section className="rounded-lg bg-surface border border-border">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <div>
+            <h2 className="text-h3 font-semibold text-text-primary">{typeLabel} Categories</h2>
+            <p className="mt-0.5 text-caption text-text-muted">{description}</p>
+          </div>
+          <Button size="sm" onClick={openCreate}>
+            + Add Category
+          </Button>
+        </div>
+
+        {isLoading ? (
+          <div className="divide-y divide-border">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="px-5 py-4 flex items-center gap-4">
+                <div className="w-4 h-4 bg-surface-2 rounded-full animate-pulse flex-shrink-0" />
+                <div className="flex-1 h-4 bg-surface-2 rounded animate-pulse" />
+                <div className="w-16 h-6 bg-surface-2 rounded animate-pulse" />
+                <div className="w-20 h-8 bg-surface-2 rounded-full animate-pulse" />
+                <div className="w-16 h-8 bg-surface-2 rounded-full animate-pulse" />
+              </div>
+            ))}
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="px-5 py-10 text-center text-text-muted text-body">
+            No categories yet.{' '}
+            <button className="text-primary underline cursor-pointer" onClick={openCreate}>
+              Add the first one.
+            </button>
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {categories.map((cat) => (
+              <div
+                key={cat.id}
+                className={[
+                  'px-5 py-4 flex items-center gap-4',
+                  !cat.isActive && 'opacity-50',
+                ].join(' ')}
+              >
+                <span
+                  className="w-4 h-4 rounded-full flex-shrink-0 border border-black/10"
+                  style={{ backgroundColor: cat.color ?? '#6366F1' }}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-label text-text-primary truncate">{cat.name}</p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {cat.isSystem && (
+                    <span className="px-2 py-0.5 rounded-full text-caption font-medium bg-surface-2 text-text-muted">
+                      System
+                    </span>
+                  )}
+                  <span
+                    className={[
+                      'px-2 py-0.5 rounded-full text-caption font-medium',
+                      cat.isActive
+                        ? 'bg-primary/10 text-primary'
+                        : 'bg-surface-2 text-text-muted',
+                    ].join(' ')}
+                  >
+                    {cat.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+
+                <span className="text-caption text-text-muted flex-shrink-0 w-8 text-right">
+                  #{cat.sortOrder}
+                </span>
+
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => openEdit(cat)}
+                    disabled={cat.isSystem || deleteMutation.isPending}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { void handleToggleActive(cat); }}
+                    disabled={cat.isSystem || updateMutation.isPending || deleteMutation.isPending}
+                  >
+                    {cat.isActive ? 'Deactivate' : 'Activate'}
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => { void handleDelete(cat); }}
+                    disabled={cat.isSystem || deleteMutation.isPending}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <FinanceCatModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        editing={editing}
+        form={form}
+        onSetField={setField}
+        onSubmit={() => { void handleSubmit(); }}
+        isSubmitting={isSubmitting}
+        errors={formErrors}
+        typeLabel={typeLabel}
+        usedColors={usedColors}
+      />
+    </>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function SettingsPage() {
+  const [activeTab, setActiveTab] = useState<Tab>('donation-cats');
+
+  // ── Donation Categories state ────────────────────────────────────────────
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<DonationCategory | null>(null);
   const [form, setForm] = useState<CategoryForm>(EMPTY_FORM);
@@ -431,7 +770,7 @@ export function SettingsPage() {
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
-  // ── Seva Types state ────────────────────────────────────────────────────────
+  // ── Seva Types state ────────────────────────────────────────────────────
   const [isSevaModalOpen, setSevaModalOpen] = useState(false);
   const [editingSevaType, setEditingSevaType] = useState<SevaType | null>(null);
   const [sevaForm, setSevaForm] = useState<SevaTypeForm>(EMPTY_SEVA_FORM);
@@ -443,6 +782,8 @@ export function SettingsPage() {
   const deleteSevaTypeMutation = useDeleteSevaType();
 
   const isSevaSubmitting = createSevaTypeMutation.isPending || updateSevaTypeMutation.isPending;
+
+  // ── Donation category handlers ───────────────────────────────────────────
 
   function setField<K extends keyof CategoryForm>(key: K, value: CategoryForm[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -488,7 +829,6 @@ export function SettingsPage() {
 
   async function handleSubmit() {
     if (!validate()) return;
-
     const dto: CreateDonationCategoryDto = {
       name: form.name.trim(),
       description: form.description.trim() || undefined,
@@ -496,7 +836,6 @@ export function SettingsPage() {
       color: form.color,
       sortOrder: form.sortOrder,
     };
-
     if (editingCategory) {
       await updateMutation.mutateAsync({ id: editingCategory.id, dto });
     } else {
@@ -512,10 +851,7 @@ export function SettingsPage() {
       );
       if (!confirmed) return;
     }
-    await updateMutation.mutateAsync({
-      id: category.id,
-      dto: { isActive: !category.isActive },
-    });
+    await updateMutation.mutateAsync({ id: category.id, dto: { isActive: !category.isActive } });
   }
 
   async function handleDelete(category: DonationCategory) {
@@ -526,7 +862,7 @@ export function SettingsPage() {
     await deleteMutation.mutateAsync(category.id);
   }
 
-  // ── Seva type handlers ──────────────────────────────────────────────────────
+  // ── Seva type handlers ──────────────────────────────────────────────────
 
   function setSevaField<K extends keyof SevaTypeForm>(key: K, value: SevaTypeForm[K]) {
     setSevaForm((prev) => ({ ...prev, [key]: value }));
@@ -577,7 +913,6 @@ export function SettingsPage() {
 
   async function handleSevaSubmit() {
     if (!validateSevaForm()) return;
-
     const dto: CreateSevaTypeDto = {
       name: sevaForm.name.trim(),
       nameHi: sevaForm.nameHi.trim() || undefined,
@@ -590,7 +925,6 @@ export function SettingsPage() {
       isOnlineBookable: sevaForm.isOnlineBookable,
       pricingTiers: sevaForm.pricingTiers.filter((t) => t.name.trim()),
     };
-
     if (editingSevaType) {
       await updateSevaTypeMutation.mutateAsync({ id: editingSevaType.id, dto });
     } else {
@@ -621,279 +955,301 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Page header */}
       <div>
         <h1 className="text-h1 font-bold text-text-primary">Settings</h1>
         <p className="mt-1 text-body text-text-muted">Temple configuration and management</p>
       </div>
 
-      {/* ── Donation Categories ─────────────────────────────────────────── */}
-      <section className="rounded-lg bg-surface border border-border">
-        {/* Section header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <div>
-            <h2 className="text-h3 font-semibold text-text-primary">Donation Categories</h2>
-            <p className="mt-0.5 text-caption text-text-muted">
-              Manage the categories shown to staff when recording donations
-            </p>
-          </div>
-          <Button size="sm" onClick={openCreate}>
-            + Add Category
-          </Button>
-        </div>
+      {/* Tab bar */}
+      <div className="flex gap-1 p-1 rounded-lg bg-surface-2 w-fit">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            className={[
+              'px-4 py-2 rounded-md text-label transition-colors duration-150',
+              activeTab === tab.id
+                ? 'bg-surface text-text-primary shadow-sm'
+                : 'text-text-muted hover:text-text-primary',
+            ].join(' ')}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        {/* Category list */}
-        {isLoading ? (
-          <div className="divide-y divide-border">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="px-5 py-4 flex items-center gap-4">
-                <div className="w-3 h-3 rounded-full bg-surface-2 animate-pulse flex-shrink-0" />
-                <div className="flex-1 h-4 bg-surface-2 rounded animate-pulse" />
-                <div className="w-16 h-6 bg-surface-2 rounded animate-pulse" />
-                <div className="w-20 h-8 bg-surface-2 rounded-full animate-pulse" />
-                <div className="w-16 h-8 bg-surface-2 rounded-full animate-pulse" />
+      {/* Tab: Donation Categories */}
+      {activeTab === 'donation-cats' && (
+        <>
+          <section className="rounded-lg bg-surface border border-border">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+              <div>
+                <h2 className="text-h3 font-semibold text-text-primary">Donation Categories</h2>
+                <p className="mt-0.5 text-caption text-text-muted">
+                  Manage the categories shown to staff when recording donations
+                </p>
               </div>
-            ))}
-          </div>
-        ) : categories.length === 0 ? (
-          <div className="px-5 py-10 text-center text-text-muted text-body">
-            No categories yet.{' '}
-            <button
-              className="text-primary underline cursor-pointer"
-              onClick={openCreate}
-            >
-              Add the first one.
-            </button>
-          </div>
-        ) : (
-          <div className="divide-y divide-border">
-            {categories.map((cat) => (
-              <div
-                key={cat.id}
-                className={[
-                  'px-5 py-4 flex items-center gap-4',
-                  !cat.isActive && 'opacity-50',
-                ].join(' ')}
-              >
-                {/* Colour dot */}
-                <div
-                  className="w-3 h-3 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: cat.color }}
-                  title={cat.color}
-                />
+              <Button size="sm" onClick={openCreate}>
+                + Add Category
+              </Button>
+            </div>
 
-                {/* Name + description */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-label text-text-primary truncate">{cat.name}</p>
-                  {cat.description && (
-                    <p className="text-caption text-text-muted truncate">{cat.description}</p>
-                  )}
-                </div>
-
-                {/* Badges */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {cat.is80gEligible && (
-                    <span className="px-2 py-0.5 rounded-full text-caption font-medium bg-green-500/10 text-green-400">
-                      80G
-                    </span>
-                  )}
-                  <span
+            {isLoading ? (
+              <div className="divide-y divide-border">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="px-5 py-4 flex items-center gap-4">
+                    <div className="w-3 h-3 rounded-full bg-surface-2 animate-pulse flex-shrink-0" />
+                    <div className="flex-1 h-4 bg-surface-2 rounded animate-pulse" />
+                    <div className="w-16 h-6 bg-surface-2 rounded animate-pulse" />
+                    <div className="w-20 h-8 bg-surface-2 rounded-full animate-pulse" />
+                    <div className="w-16 h-8 bg-surface-2 rounded-full animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            ) : categories.length === 0 ? (
+              <div className="px-5 py-10 text-center text-text-muted text-body">
+                No categories yet.{' '}
+                <button className="text-primary underline cursor-pointer" onClick={openCreate}>
+                  Add the first one.
+                </button>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {categories.map((cat) => (
+                  <div
+                    key={cat.id}
                     className={[
-                      'px-2 py-0.5 rounded-full text-caption font-medium',
-                      cat.isActive
-                        ? 'bg-primary/10 text-primary'
-                        : 'bg-surface-2 text-text-muted',
+                      'px-5 py-4 flex items-center gap-4',
+                      !cat.isActive && 'opacity-50',
                     ].join(' ')}
                   >
-                    {cat.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-
-                {/* Sort order */}
-                <span className="text-caption text-text-muted flex-shrink-0 w-8 text-right">
-                  #{cat.sortOrder}
-                </span>
-
-                {/* Action buttons */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openEdit(cat)}
-                    disabled={deleteMutation.isPending}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleToggleActive(cat)}
-                    disabled={updateMutation.isPending || deleteMutation.isPending}
-                  >
-                    {cat.isActive ? 'Deactivate' : 'Activate'}
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => handleDelete(cat)}
-                    disabled={deleteMutation.isPending}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Category form modal */}
-      <CategoryModal
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        editing={editingCategory}
-        form={form}
-        onSetField={setField}
-        onSubmit={() => { void handleSubmit(); }}
-        isSubmitting={isSubmitting}
-        errors={formErrors}
-      />
-
-      {/* ── Seva Types ──────────────────────────────────────────────────── */}
-      <section className="rounded-lg bg-surface border border-border">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <div>
-            <h2 className="text-h3 font-semibold text-text-primary">Seva Types</h2>
-            <p className="mt-0.5 text-caption text-text-muted">
-              Manage the sevas available for booking
-            </p>
-          </div>
-          <Button size="sm" onClick={openCreateSeva}>
-            + Add Seva Type
-          </Button>
-        </div>
-
-        {sevaTypesLoading ? (
-          <div className="divide-y divide-border">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="px-5 py-4 flex items-center gap-4">
-                <div className="flex-1 h-4 bg-surface-2 rounded animate-pulse" />
-                <div className="w-20 h-6 bg-surface-2 rounded animate-pulse" />
-                <div className="w-20 h-8 bg-surface-2 rounded-full animate-pulse" />
-                <div className="w-16 h-8 bg-surface-2 rounded-full animate-pulse" />
-              </div>
-            ))}
-          </div>
-        ) : sevaTypes.length === 0 ? (
-          <div className="px-5 py-10 text-center text-text-muted text-body">
-            No seva types yet.{' '}
-            <button
-              className="text-primary underline cursor-pointer"
-              onClick={openCreateSeva}
-            >
-              Add the first one.
-            </button>
-          </div>
-        ) : (
-          <div className="divide-y divide-border">
-            {sevaTypes.map((st) => (
-              <div
-                key={st.id}
-                className={[
-                  'px-5 py-4 flex items-center gap-4',
-                  !st.isActive && 'opacity-50',
-                ].join(' ')}
-              >
-                {/* Name + meta */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-label text-text-primary truncate">
-                    {st.name}
-                    {st.nameHi && (
-                      <span className="ml-2 text-caption text-text-muted">{st.nameHi}</span>
-                    )}
-                  </p>
-                  <p className="text-caption text-text-muted">
-                    {st.frequency} · {st.durationMinutes}min
-                    {st.pricingTiers.length > 0 && (
-                      <> · {st.pricingTiers.map((t) => `${t.name} ₹${t.price}`).join(', ')}</>
-                    )}
-                  </p>
-                </div>
-
-                {/* Badges */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {st.requiresSankalpa && (
-                    <span className="px-2 py-0.5 rounded-full text-caption font-medium bg-primary/10 text-primary">
-                      Sankalpa
+                    <div
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: cat.color }}
+                      title={cat.color}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-label text-text-primary truncate">{cat.name}</p>
+                      {cat.description && (
+                        <p className="text-caption text-text-muted truncate">{cat.description}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {cat.is80gEligible && (
+                        <span className="px-2 py-0.5 rounded-full text-caption font-medium bg-green-500/10 text-green-400">
+                          80G
+                        </span>
+                      )}
+                      <span
+                        className={[
+                          'px-2 py-0.5 rounded-full text-caption font-medium',
+                          cat.isActive
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-surface-2 text-text-muted',
+                        ].join(' ')}
+                      >
+                        {cat.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <span className="text-caption text-text-muted flex-shrink-0 w-8 text-right">
+                      #{cat.sortOrder}
                     </span>
-                  )}
-                  {st.isOnlineBookable && (
-                    <span className="px-2 py-0.5 rounded-full text-caption font-medium bg-info/10 text-info">
-                      Online
-                    </span>
-                  )}
-                  <span
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEdit(cat)}
+                        disabled={deleteMutation.isPending}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => { void handleToggleActive(cat); }}
+                        disabled={updateMutation.isPending || deleteMutation.isPending}
+                      >
+                        {cat.isActive ? 'Deactivate' : 'Activate'}
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => { void handleDelete(cat); }}
+                        disabled={deleteMutation.isPending}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <CategoryModal
+            isOpen={isModalOpen}
+            onClose={closeModal}
+            editing={editingCategory}
+            form={form}
+            onSetField={setField}
+            onSubmit={() => { void handleSubmit(); }}
+            isSubmitting={isSubmitting}
+            errors={formErrors}
+          />
+        </>
+      )}
+
+      {/* Tab: Seva Types */}
+      {activeTab === 'seva-types' && (
+        <>
+          <section className="rounded-lg bg-surface border border-border">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+              <div>
+                <h2 className="text-h3 font-semibold text-text-primary">Seva Types</h2>
+                <p className="mt-0.5 text-caption text-text-muted">
+                  Manage the sevas available for booking
+                </p>
+              </div>
+              <Button size="sm" onClick={openCreateSeva}>
+                + Add Seva Type
+              </Button>
+            </div>
+
+            {sevaTypesLoading ? (
+              <div className="divide-y divide-border">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="px-5 py-4 flex items-center gap-4">
+                    <div className="flex-1 h-4 bg-surface-2 rounded animate-pulse" />
+                    <div className="w-20 h-6 bg-surface-2 rounded animate-pulse" />
+                    <div className="w-20 h-8 bg-surface-2 rounded-full animate-pulse" />
+                    <div className="w-16 h-8 bg-surface-2 rounded-full animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            ) : sevaTypes.length === 0 ? (
+              <div className="px-5 py-10 text-center text-text-muted text-body">
+                No seva types yet.{' '}
+                <button
+                  className="text-primary underline cursor-pointer"
+                  onClick={openCreateSeva}
+                >
+                  Add the first one.
+                </button>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {sevaTypes.map((st) => (
+                  <div
+                    key={st.id}
                     className={[
-                      'px-2 py-0.5 rounded-full text-caption font-medium',
-                      st.isActive
-                        ? 'bg-primary/10 text-primary'
-                        : 'bg-surface-2 text-text-muted',
+                      'px-5 py-4 flex items-center gap-4',
+                      !st.isActive && 'opacity-50',
                     ].join(' ')}
                   >
-                    {st.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-
-                {/* Sort order */}
-                <span className="text-caption text-text-muted flex-shrink-0 w-8 text-right">
-                  #{st.sortOrder}
-                </span>
-
-                {/* Action buttons */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openEditSeva(st)}
-                    disabled={deleteSevaTypeMutation.isPending}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => { void handleToggleSevaActive(st); }}
-                    disabled={updateSevaTypeMutation.isPending || deleteSevaTypeMutation.isPending}
-                  >
-                    {st.isActive ? 'Deactivate' : 'Activate'}
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => { void handleDeleteSeva(st); }}
-                    disabled={deleteSevaTypeMutation.isPending}
-                  >
-                    Delete
-                  </Button>
-                </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-label text-text-primary truncate">
+                        {st.name}
+                        {st.nameHi && (
+                          <span className="ml-2 text-caption text-text-muted">{st.nameHi}</span>
+                        )}
+                      </p>
+                      <p className="text-caption text-text-muted">
+                        {st.frequency} · {st.durationMinutes}min
+                        {st.pricingTiers.length > 0 && (
+                          <> · {st.pricingTiers.map((t) => `${t.name} ₹${t.price}`).join(', ')}</>
+                        )}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {st.requiresSankalpa && (
+                        <span className="px-2 py-0.5 rounded-full text-caption font-medium bg-primary/10 text-primary">
+                          Sankalpa
+                        </span>
+                      )}
+                      {st.isOnlineBookable && (
+                        <span className="px-2 py-0.5 rounded-full text-caption font-medium bg-info/10 text-info">
+                          Online
+                        </span>
+                      )}
+                      <span
+                        className={[
+                          'px-2 py-0.5 rounded-full text-caption font-medium',
+                          st.isActive
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-surface-2 text-text-muted',
+                        ].join(' ')}
+                      >
+                        {st.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <span className="text-caption text-text-muted flex-shrink-0 w-8 text-right">
+                      #{st.sortOrder}
+                    </span>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEditSeva(st)}
+                        disabled={deleteSevaTypeMutation.isPending}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => { void handleToggleSevaActive(st); }}
+                        disabled={updateSevaTypeMutation.isPending || deleteSevaTypeMutation.isPending}
+                      >
+                        {st.isActive ? 'Deactivate' : 'Activate'}
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => { void handleDeleteSeva(st); }}
+                        disabled={deleteSevaTypeMutation.isPending}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-      </section>
+            )}
+          </section>
 
-      {/* Seva type form modal */}
-      <SevaTypeModal
-        isOpen={isSevaModalOpen}
-        onClose={closeSevaModal}
-        editing={editingSevaType}
-        form={sevaForm}
-        onSetField={setSevaField}
-        onSubmit={() => { void handleSevaSubmit(); }}
-        isSubmitting={isSevaSubmitting}
-        errors={sevaFormErrors}
-      />
+          <SevaTypeModal
+            isOpen={isSevaModalOpen}
+            onClose={closeSevaModal}
+            editing={editingSevaType}
+            form={sevaForm}
+            onSetField={setSevaField}
+            onSubmit={() => { void handleSevaSubmit(); }}
+            isSubmitting={isSevaSubmitting}
+            errors={sevaFormErrors}
+          />
+        </>
+      )}
+
+      {/* Tab: Income Categories */}
+      {activeTab === 'income-cats' && (
+        <FinanceCatSection
+          type="INCOME"
+          typeLabel="Income"
+          description="Categories for manual income entries in the finance ledger"
+        />
+      )}
+
+      {/* Tab: Expense Categories */}
+      {activeTab === 'expense-cats' && (
+        <FinanceCatSection
+          type="EXPENSE"
+          typeLabel="Expense"
+          description="Categories for expense entries in the finance ledger"
+        />
+      )}
     </div>
   );
 }

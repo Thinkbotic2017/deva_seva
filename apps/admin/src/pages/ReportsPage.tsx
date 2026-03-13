@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import {
-  useDonationAnalytics,
-  useEightyGSummary,
+  useDonationSummary,
+  useEightyGReport,
   useDaySheet,
   useLedgerReport,
 } from '@/api/reports.api';
@@ -45,11 +45,10 @@ function DonationSummaryTab() {
   const [from, setFrom] = useState(defaultFrom);
   const [to,   setTo]   = useState(defaultTo);
 
-  const { data, isLoading, isError } = useDonationAnalytics(from, to);
+  const { data, isLoading, isError } = useDonationSummary(from, to);
 
   return (
     <div className="space-y-5">
-      {/* Date range */}
       <div className="flex gap-3">
         <div className="w-40">
           <Input label="From" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
@@ -67,6 +66,20 @@ function DonationSummaryTab() {
         <EmptyState message="No data for this period" />
       ) : (
         <div className="space-y-5">
+          {/* Totals */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-lg bg-surface border border-border p-4">
+              <p className="text-caption text-text-muted uppercase tracking-wide">Grand Total</p>
+              <p className="mt-1 text-h2 font-bold text-success">
+                ₹{parseFloat(data.grandTotal).toLocaleString('en-IN')}
+              </p>
+            </div>
+            <div className="rounded-lg bg-surface border border-border p-4">
+              <p className="text-caption text-text-muted uppercase tracking-wide">Confirmed Donations</p>
+              <p className="mt-1 text-h2 font-bold text-text-primary">{data.confirmedCount}</p>
+            </div>
+          </div>
+
           {/* By mode */}
           <SectionCard title="By Payment Mode">
             <table className="w-full text-body">
@@ -78,7 +91,7 @@ function DonationSummaryTab() {
                 </tr>
               </thead>
               <tbody>
-                {data.byMode.map((row) => (
+                {(data.byMode ?? []).map((row) => (
                   <tr key={row.mode} className="border-b border-border last:border-0">
                     <td className="py-2 text-text-primary">{row.mode}</td>
                     <td className="py-2 text-center text-text-secondary">{row.count}</td>
@@ -102,8 +115,8 @@ function DonationSummaryTab() {
                 </tr>
               </thead>
               <tbody>
-                {data.byCategory.map((row) => (
-                  <tr key={row.categoryName} className="border-b border-border last:border-0">
+                {(data.byCategory ?? []).map((row) => (
+                  <tr key={row.categoryId} className="border-b border-border last:border-0">
                     <td className="py-2 text-text-primary">{row.categoryName}</td>
                     <td className="py-2 text-center text-text-secondary">{row.count}</td>
                     <td className="py-2 text-right font-semibold text-text-primary">
@@ -114,34 +127,6 @@ function DonationSummaryTab() {
               </tbody>
             </table>
           </SectionCard>
-
-          {/* Top donors */}
-          {data.topDonors.length > 0 && (
-            <SectionCard title="Top Donors">
-              <table className="w-full text-body">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">#</th>
-                    <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Name</th>
-                    <th className="pb-2 text-center text-caption text-text-muted font-medium uppercase">Txns</th>
-                    <th className="pb-2 text-right text-caption text-text-muted font-medium uppercase">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.topDonors.slice(0, 10).map((row, i) => (
-                    <tr key={i} className="border-b border-border last:border-0">
-                      <td className="py-2 text-caption text-text-muted w-6">{i + 1}</td>
-                      <td className="py-2 text-text-primary">{row.donorName}</td>
-                      <td className="py-2 text-center text-text-secondary">{row.count}</td>
-                      <td className="py-2 text-right font-semibold text-text-primary">
-                        ₹{parseFloat(row.total).toLocaleString('en-IN')}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </SectionCard>
-          )}
         </div>
       )}
     </div>
@@ -152,27 +137,17 @@ function DonationSummaryTab() {
 
 function EightyGTab() {
   const [fiscalYear, setFiscalYear] = useState(currentFiscalYear());
-  const { data, isLoading, isError } = useEightyGSummary(fiscalYear);
+  const { data, isLoading, isError } = useEightyGReport(fiscalYear);
 
   return (
     <div className="space-y-5">
-      <div className="flex items-end gap-3">
-        <div className="w-40">
-          <Input
-            label="Fiscal Year"
-            placeholder="2025-26"
-            value={fiscalYear}
-            onChange={(e) => setFiscalYear(e.target.value)}
-          />
-        </div>
-        {data?.downloadUrl && (
-          <Button
-            variant="secondary"
-            onClick={() => window.open(data.downloadUrl!, '_blank')}
-          >
-            Download PDF
-          </Button>
-        )}
+      <div className="w-40">
+        <Input
+          label="Fiscal Year"
+          placeholder="2025-26"
+          value={fiscalYear}
+          onChange={(e) => setFiscalYear(e.target.value)}
+        />
       </div>
 
       {isLoading ? (
@@ -187,12 +162,12 @@ function EightyGTab() {
             <div className="rounded-lg bg-surface border border-border p-4">
               <p className="text-caption text-text-muted uppercase tracking-wide">80G Eligible Total</p>
               <p className="mt-1 text-h2 font-bold text-text-primary">
-                ₹{parseFloat(data.totalEligible).toLocaleString('en-IN')}
+                ₹{parseFloat(data.totalEligibleAmount).toLocaleString('en-IN')}
               </p>
             </div>
             <div className="rounded-lg bg-surface border border-border p-4">
               <p className="text-caption text-text-muted uppercase tracking-wide">Unique Donors</p>
-              <p className="mt-1 text-h2 font-bold text-text-primary">{data.donorsCount}</p>
+              <p className="mt-1 text-h2 font-bold text-text-primary">{data.donorCount}</p>
             </div>
           </div>
 
@@ -207,7 +182,7 @@ function EightyGTab() {
                 </tr>
               </thead>
               <tbody>
-                {data.donations.map((d) => (
+                {(data.donations ?? []).map((d) => (
                   <tr key={d.id} className="border-b border-border last:border-0">
                     <td className="py-2 text-text-primary">{d.donorName}</td>
                     <td className="py-2 text-caption text-text-muted font-mono">
@@ -238,6 +213,9 @@ function DaySheetTab() {
   const [date, setDate] = useState(today);
   const { data, isLoading, isError } = useDaySheet(date);
 
+  const sevaBookings = data?.sevaBookings ?? [];
+  const donations    = data?.donations ?? [];
+
   return (
     <div className="space-y-5">
       <div className="w-40">
@@ -248,46 +226,104 @@ function DaySheetTab() {
         <ReportSkeleton />
       ) : isError ? (
         <ErrorState />
-      ) : !data?.bookings.length ? (
-        <EmptyState message="No seva bookings for this date" />
+      ) : sevaBookings.length === 0 && donations.length === 0 ? (
+        <EmptyState message="No activity for this date" />
       ) : (
-        <SectionCard title={`Sevas on ${new Date(date).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`}>
-          <table className="w-full text-body">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Time</th>
-                <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Seva</th>
-                <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Devotee</th>
-                <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Sankalpa</th>
-                <th className="pb-2 text-right text-caption text-text-muted font-medium uppercase">Amount</th>
-                <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.bookings
-                .sort((a, b) => a.timeSlot.localeCompare(b.timeSlot))
-                .map((b) => (
-                  <tr key={b.id} className="border-b border-border last:border-0">
-                    <td className="py-2 text-label font-medium text-text-primary">{b.timeSlot}</td>
-                    <td className="py-2 text-text-primary">{b.sevaType?.name ?? '—'}</td>
-                    <td className="py-2">
-                      <p className="text-text-primary">{b.devoteeName}</p>
-                      {b.devoteePhone && (
-                        <p className="text-caption text-text-muted">{b.devoteePhone}</p>
-                      )}
-                    </td>
-                    <td className="py-2 text-text-secondary">{b.sankalpaName ?? '—'}</td>
-                    <td className="py-2 text-right font-semibold text-text-primary">
-                      ₹{parseFloat(b.amount).toLocaleString('en-IN')}
-                    </td>
-                    <td className="py-2">
-                      <Badge label={b.status} />
-                    </td>
+        <div className="space-y-5">
+          {/* Totals */}
+          {data && (
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { label: 'Donations',    value: data.donationTotal, color: 'text-text-primary' },
+                { label: 'Seva Bookings', value: data.sevaTotal,    color: 'text-text-primary' },
+                { label: 'Grand Total',  value: data.grandTotal,    color: 'text-success'      },
+              ].map(({ label, value, color }) => (
+                <div key={label} className="rounded-lg bg-surface border border-border p-4">
+                  <p className="text-caption text-text-muted uppercase tracking-wide">{label}</p>
+                  <p className={`mt-1 text-h2 font-bold ${color}`}>
+                    ₹{parseFloat(value).toLocaleString('en-IN')}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Seva bookings */}
+          {sevaBookings.length > 0 && (
+            <SectionCard title={`Seva Bookings — ${new Date(date).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`}>
+              <table className="w-full text-body">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Time</th>
+                    <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Seva</th>
+                    <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Devotee</th>
+                    <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Sankalpa</th>
+                    <th className="pb-2 text-right text-caption text-text-muted font-medium uppercase">Amount</th>
+                    <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Status</th>
                   </tr>
-                ))}
-            </tbody>
-          </table>
-        </SectionCard>
+                </thead>
+                <tbody>
+                  {sevaBookings
+                    .slice()
+                    .sort((a, b) => (a.timeSlot ?? '').localeCompare(b.timeSlot ?? ''))
+                    .map((b) => (
+                      <tr key={b.id} className="border-b border-border last:border-0">
+                        <td className="py-2 text-label font-medium text-text-primary">{b.timeSlot}</td>
+                        <td className="py-2 text-text-primary">{b.sevaType?.name ?? '—'}</td>
+                        <td className="py-2">
+                          <p className="text-text-primary">{b.devoteeName}</p>
+                          {b.devoteePhone && (
+                            <p className="text-caption text-text-muted">{b.devoteePhone}</p>
+                          )}
+                        </td>
+                        <td className="py-2 text-text-secondary">{b.sankalpaName ?? '—'}</td>
+                        <td className="py-2 text-right font-semibold text-text-primary">
+                          ₹{parseFloat(b.amount).toLocaleString('en-IN')}
+                        </td>
+                        <td className="py-2">
+                          <Badge label={b.status} />
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </SectionCard>
+          )}
+
+          {/* Donations */}
+          {donations.length > 0 && (
+            <SectionCard title="Donations">
+              <table className="w-full text-body">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Donor</th>
+                    <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Mode</th>
+                    <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Receipt</th>
+                    <th className="pb-2 text-right text-caption text-text-muted font-medium uppercase">Amount</th>
+                    <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {donations.map((d) => (
+                    <tr key={d.id} className="border-b border-border last:border-0">
+                      <td className="py-2 text-text-primary">{d.donorName}</td>
+                      <td className="py-2 text-text-secondary">{d.mode}</td>
+                      <td className="py-2 text-caption text-text-muted font-mono">
+                        {d.receiptNumber ?? '—'}
+                      </td>
+                      <td className="py-2 text-right font-semibold text-success">
+                        ₹{parseFloat(d.amount).toLocaleString('en-IN')}
+                      </td>
+                      <td className="py-2">
+                        <Badge label={d.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </SectionCard>
+          )}
+        </div>
       )}
     </div>
   );
@@ -296,84 +332,81 @@ function DaySheetTab() {
 // ─── Ledger Report tab ────────────────────────────────────────────────────────
 
 function LedgerReportTab() {
-  const [from, setFrom] = useState(defaultFrom);
-  const [to,   setTo]   = useState(defaultTo);
-
-  const { data, isLoading, isError } = useLedgerReport(from, to);
-  const entries = (data as { entries?: ReturnType<typeof useLedgerReport>['data'] } | undefined)?.entries
-    // The endpoint returns PaginatedResult — handle both shapes
-    ?? (data as { data?: unknown[] } | undefined)?.data
-    ?? [];
+  const [fiscalYear, setFiscalYear] = useState(currentFiscalYear());
+  const { data, isLoading, isError } = useLedgerReport(fiscalYear);
 
   return (
     <div className="space-y-5">
-      <div className="flex gap-3">
-        <div className="w-40">
-          <Input label="From" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-        </div>
-        <div className="w-40">
-          <Input label="To" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-        </div>
+      <div className="w-40">
+        <Input
+          label="Fiscal Year"
+          placeholder="2025-26"
+          value={fiscalYear}
+          onChange={(e) => setFiscalYear(e.target.value)}
+        />
       </div>
-
-      {data && (
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { label: 'Total Income',  value: (data as { totalIncome?: string }).totalIncome ?? '0', color: 'text-success' },
-            { label: 'Total Expense', value: (data as { totalExpense?: string }).totalExpense ?? '0', color: 'text-danger' },
-            { label: 'Net',           value: (data as { net?: string }).net ?? '0', color: 'text-text-primary' },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="rounded-lg bg-surface border border-border p-4">
-              <p className="text-caption text-text-muted uppercase tracking-wide">{label}</p>
-              <p className={`mt-1 text-h2 font-bold ${color}`}>
-                ₹{parseFloat(value).toLocaleString('en-IN')}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
 
       {isLoading ? (
         <ReportSkeleton />
       ) : isError ? (
         <ErrorState />
-      ) : !Array.isArray(entries) || entries.length === 0 ? (
-        <EmptyState message="No ledger entries for this period" />
+      ) : !data ? (
+        <EmptyState message="No ledger data for this fiscal year" />
       ) : (
-        <SectionCard title="Ledger Entries">
-          <table className="w-full text-body">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Date</th>
-                <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Description</th>
-                <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Category</th>
-                <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Type</th>
-                <th className="pb-2 text-right text-caption text-text-muted font-medium uppercase">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(entries as Array<{ id: string; entryDate: string; description: string; category?: { name: string }; type: string; amount: string }>).map((e) => (
-                <tr key={e.id} className="border-b border-border last:border-0">
-                  <td className="py-2 text-text-secondary whitespace-nowrap">
-                    {new Date(e.entryDate).toLocaleDateString('en-IN', {
-                      day: '2-digit', month: 'short',
-                    })}
-                  </td>
-                  <td className="py-2 text-text-primary">{e.description}</td>
-                  <td className="py-2 text-text-secondary">{e.category?.name ?? '—'}</td>
-                  <td className="py-2">
-                    <Badge label={e.type} variant={e.type === 'INCOME' ? 'success' : 'danger'} />
-                  </td>
-                  <td className="py-2 text-right">
-                    <span className={`font-semibold ${e.type === 'INCOME' ? 'text-success' : 'text-danger'}`}>
-                      {e.type === 'EXPENSE' ? '−' : '+'}₹{parseFloat(e.amount).toLocaleString('en-IN')}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </SectionCard>
+        <div className="space-y-5">
+          {/* Totals */}
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: 'Total Income',  value: data.totalIncome,  color: 'text-success'      },
+              { label: 'Total Expense', value: data.totalExpense, color: 'text-danger'        },
+              { label: 'Net Balance',   value: data.netBalance,   color: parseFloat(data.netBalance) >= 0 ? 'text-text-primary' : 'text-danger' },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="rounded-lg bg-surface border border-border p-4">
+                <p className="text-caption text-text-muted uppercase tracking-wide">{label}</p>
+                <p className={`mt-1 text-h2 font-bold ${color}`}>
+                  ₹{parseFloat(value).toLocaleString('en-IN')}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* By fund */}
+          {(data.byFund ?? []).length > 0 && (
+            <SectionCard title="By Fund">
+              <table className="w-full text-body">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="pb-2 text-left text-caption text-text-muted font-medium uppercase">Fund</th>
+                    <th className="pb-2 text-right text-caption text-text-muted font-medium uppercase">Income</th>
+                    <th className="pb-2 text-right text-caption text-text-muted font-medium uppercase">Expense</th>
+                    <th className="pb-2 text-right text-caption text-text-muted font-medium uppercase">Net</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.byFund.map((row) => {
+                    const net = parseFloat(row.totalIncome) - parseFloat(row.totalExpense);
+                    return (
+                      <tr key={row.fundId ?? 'unallocated'} className="border-b border-border last:border-0">
+                        <td className="py-2 text-text-primary">
+                          {row.fundId ? row.fundId : <span className="text-text-muted italic">Unallocated</span>}
+                        </td>
+                        <td className="py-2 text-right text-success font-medium">
+                          ₹{parseFloat(row.totalIncome).toLocaleString('en-IN')}
+                        </td>
+                        <td className="py-2 text-right text-danger font-medium">
+                          ₹{parseFloat(row.totalExpense).toLocaleString('en-IN')}
+                        </td>
+                        <td className={`py-2 text-right font-semibold ${net >= 0 ? 'text-text-primary' : 'text-danger'}`}>
+                          ₹{net.toLocaleString('en-IN')}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </SectionCard>
+          )}
+        </div>
       )}
     </div>
   );

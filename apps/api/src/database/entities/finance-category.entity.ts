@@ -19,6 +19,12 @@ export class FinanceCategory extends TenantBaseEntity {
   @Column({ name: 'is_system', type: 'boolean', default: false })
   isSystem: boolean;
 
+  @Column({ name: 'is_active', type: 'boolean', default: true })
+  isActive: boolean;
+
   @Column({ name: 'sort_order', type: 'integer', default: 0 })
   sortOrder: number;
+
+  @Column({ name: 'color', type: 'varchar', length: 7, default: '#6366F1' })
+  color: string;
 }
