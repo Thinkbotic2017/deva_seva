@@ -21,7 +21,11 @@ export class ListUsersQueryDto {
   role?: UserRole;
 
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === 'true'  || value === true)  return true;
+    if (value === 'false' || value === false) return false;
+    return undefined;
+  })
   @IsBoolean()
-  @Transform(({ value }: { value: string }) => value === 'true')
   isActive?: boolean;
 }
