@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { fmtINR } from '@/lib/format';
 import type { PublicCategory, PublicTemple, InitiateResult, PublicDonatePayload } from '@/api/public.api';
 import { initiateDonation } from '@/api/public.api';
 
@@ -39,8 +40,8 @@ export function PublicDonateTab({ temple, categories }: Props) {
   const [amount, setAmount] = useState('');
   const [pan, setPan] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const quickAmounts = [101, 501, 1001, 2100, 5100, 11000];
 
@@ -62,7 +63,7 @@ export function PublicDonateTab({ temple, categories }: Props) {
     if (pan.trim()) payload.pan = pan.trim().toUpperCase();
 
     try {
-      setLoading(true);
+      setIsLoading(true);
       await loadRazorpayScript();
       const result: InitiateResult = await initiateDonation(temple.slug, payload);
 
@@ -79,7 +80,7 @@ export function PublicDonateTab({ temple, categories }: Props) {
         },
         theme: { color: '#E8530A' },
         handler: () => {
-          setSuccess(true);
+          setIsSuccess(true);
         },
       };
 
@@ -88,11 +89,11 @@ export function PublicDonateTab({ temple, categories }: Props) {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   }
 
-  if (success) {
+  if (isSuccess) {
     return (
       <div className="max-w-lg mx-auto bg-bg-surface rounded-2xl shadow-modal border border-border-subtle p-6 md:p-8">
         <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -104,7 +105,7 @@ export function PublicDonateTab({ temple, categories }: Props) {
           <h2 className="text-xl font-semibold text-text-primary mb-2">Thank you, {donorName}!</h2>
           <p className="text-text-secondary text-sm mb-6">Your donation has been received. A receipt will be sent to your WhatsApp shortly.</p>
           <button
-            onClick={() => { setSuccess(false); setAmount(''); setDonorName(''); setDonorPhone(''); setPan(''); }}
+            onClick={() => { setIsSuccess(false); setAmount(''); setDonorName(''); setDonorPhone(''); setPan(''); }}
             className="w-full py-4 rounded-xl bg-brand-primary text-white font-bold text-base hover:bg-brand-primary-hover active:scale-[0.98] transition-all"
           >
             Make Another Donation
@@ -147,7 +148,7 @@ export function PublicDonateTab({ temple, categories }: Props) {
                     : 'px-4 py-2 rounded-full border border-border-default text-text-secondary text-sm font-medium hover:border-brand-primary hover:text-brand-primary transition-all cursor-pointer'
                 }
               >
-                ₹{q.toLocaleString('en-IN')}
+                ₹{fmtINR(q)}
               </button>
             ))}
           </div>
@@ -215,10 +216,10 @@ export function PublicDonateTab({ temple, categories }: Props) {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={isLoading}
           className="w-full py-4 rounded-xl bg-brand-primary text-white font-bold text-base hover:bg-brand-primary-hover active:scale-[0.98] transition-all disabled:opacity-50"
         >
-          {loading ? 'Processing…' : `Donate ₹${amount || '—'}`}
+          {isLoading ? 'Processing…' : `Donate ₹${amount || '—'}`}
         </button>
       </form>
     </div>

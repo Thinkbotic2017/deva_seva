@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { fmtINR } from '@/lib/format';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -17,24 +19,6 @@ const TIER_VARIANT = {
   VIP:          'warning',
   LIFE_TRUSTEE: 'success',
 } as const;
-
-// ─── Loading skeleton ─────────────────────────────────────────────────────────
-
-function TableSkeleton() {
-  return (
-    <tbody>
-      {Array.from({ length: 8 }).map((_, i) => (
-        <tr key={i} className="border-b border-border-subtle">
-          {Array.from({ length: 6 }).map((_, j) => (
-            <td key={j} className="px-4 py-3">
-              <div className="h-4 bg-bg-surface-2 rounded animate-pulse" style={{ width: `${55 + (j * 13) % 45}%` }} />
-            </td>
-          ))}
-        </tr>
-      ))}
-    </tbody>
-  );
-}
 
 // ─── Devotee detail drawer ────────────────────────────────────────────────────
 
@@ -117,7 +101,7 @@ function DevoteeDetailDrawer({
       {detailLoading ? (
         <div className="p-6 space-y-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-5 bg-bg-surface-2 rounded animate-pulse w-3/4" />
+            <div key={`skeleton-card-${i}`} className="h-5 bg-bg-surface-2 rounded animate-pulse w-3/4" />
           ))}
         </div>
       ) : devotee ? (
@@ -232,7 +216,7 @@ function DevoteeDetailDrawer({
               </div>
 
               <div className="grid grid-cols-3 gap-3 pt-1">
-                <StatBox label="Total Donated" value={`₹${totalDonated.toLocaleString('en-IN')}`} />
+                <StatBox label="Total Donated" value={`₹${fmtINR(totalDonated)}`} />
                 <StatBox label="Donations" value={String(donationCount)} />
                 <StatBox label="Sevas" value={String(sevaCount)} />
               </div>
@@ -268,7 +252,7 @@ function DevoteeDetailDrawer({
                       </div>
                       <div className="text-right">
                         <p className="text-label font-semibold text-text-primary">
-                          ₹{parseFloat(d.amount).toLocaleString('en-IN')}
+                          ₹{fmtINR(d.amount)}
                         </p>
                         <Badge label={d.status} />
                       </div>
@@ -361,7 +345,7 @@ export function DevoteesPage() {
             </thead>
 
             {isLoading ? (
-              <TableSkeleton />
+              <tbody><TableSkeleton rows={8} columns={6} /></tbody>
             ) : isError ? (
               <tbody>
                 <tr>
@@ -402,7 +386,7 @@ export function DevoteesPage() {
                       <Badge label={d.tier} variant={TIER_VARIANT[d.tier]} />
                     </td>
                     <td className="px-4 py-3 text-right text-label font-semibold text-text-primary">
-                      ₹{(parseFloat(d.totalDonationAmount ?? '0') || 0).toLocaleString('en-IN')}
+                      ₹{fmtINR(d.totalDonationAmount ?? '0')}
                     </td>
                     <td className="px-4 py-3 text-center text-body text-text-secondary">
                       {d.donationCount}

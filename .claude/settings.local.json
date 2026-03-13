@@ -25,7 +25,15 @@
       "Bash(cd \"D:\\\\Software\\\\deva_seva\\\\apps\\\\api\" && pnpm add helmet @nestjs/throttler 2>&1)",
       "Bash(node -e \"const t = require\\('D:/Software/deva_seva/packages/types/src/index.ts'\\); console.log\\(Object.keys\\(t\\).filter\\(k => k.toLowerCase\\(\\).includes\\('billing'\\)\\)\\)\" 2>&1 | head -5)",
       "Bash(node -e \"require\\('joi'\\)\" 2>&1 | head -3)",
-      "Bash(cd D:/Software/deva_seva/apps/api && pnpm add joi 2>&1 | tail -5)"
+      "Bash(cd D:/Software/deva_seva/apps/api && pnpm add joi 2>&1 | tail -5)",
+      "Bash(find /d/Software/deva_seva/apps/admin/src -type f \\\\\\( -name \"*.tsx\" -o -name \"*.ts\" \\\\\\) ! -path \"*/node_modules/*\" | xargs wc -l | tail -1)",
+      "Bash(find /d/Software/deva_seva/apps/admin/src -name \"*.tsx\" -type f -exec wc -l {} + | sort -rn | head -15)",
+      "Bash(find /d/Software/deva_seva/apps/admin/src/components -type f -name \"*.tsx\" -exec wc -l {} + | sort -rn)",
+      "Bash(find /d/Software/deva_seva/apps/api/src -type f -name \"*.controller.ts\" -exec wc -l {} + | sort -rn | head -10)",
+      "Bash(find /d/Software/deva_seva/apps/api/src -type f -name \"*.service.ts\" ! -path \"*/__tests__/*\" -exec wc -l {} + | sort -rn | head -10)",
+      "Bash(grep -o 'className=\"[^\"]*border border-border-subtle[^\"]*\"' /d/Software/deva_seva/apps/admin/src/pages/*.tsx | head -10)",
+      "Bash(wc -l D:/Software/deva_seva/apps/admin/src/pages/SettingsPage.tsx && wc -l D:/Software/deva_seva/apps/admin/src/pages/settings/*.tsx 2>/dev/null)",
+      "Bash(cd D:/Software/deva_seva && grep -n \"export function\\\\|export const\" apps/admin/src/pages/settings/*.tsx)"
     ]
   }
 }

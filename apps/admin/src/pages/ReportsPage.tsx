@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { fmtINR } from '@/lib/format';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
@@ -56,7 +57,7 @@ function ReportSkeleton() {
     <div className="rounded-lg bg-bg-surface border border-border-subtle p-5 space-y-3">
       {Array.from({ length: 6 }).map((_, i) => (
         <div
-          key={i}
+          key={`skeleton-row-${i}`}
           className="h-5 bg-bg-surface-2 rounded animate-pulse"
           style={{ width: `${50 + (i * 17) % 50}%` }}
         />
@@ -110,7 +111,7 @@ function DonationSummaryTab() {
             <div className="rounded-lg bg-bg-surface border border-border-subtle p-4">
               <p className="text-caption text-text-muted uppercase tracking-wide">Grand Total</p>
               <p className="mt-1 text-h2 font-bold text-success-DEFAULT">
-                ₹{parseFloat(data.grandTotal).toLocaleString('en-IN')}
+                ₹{fmtINR(data.grandTotal)}
               </p>
             </div>
             <div className="rounded-lg bg-bg-surface border border-border-subtle p-4">
@@ -134,7 +135,7 @@ function DonationSummaryTab() {
                     <td className="py-2 text-text-primary">{row.mode}</td>
                     <td className="py-2 text-center text-text-secondary">{row.count}</td>
                     <td className="py-2 text-right font-semibold text-text-primary">
-                      ₹{parseFloat(row.total).toLocaleString('en-IN')}
+                      ₹{fmtINR(row.total)}
                     </td>
                   </tr>
                 ))}
@@ -157,7 +158,7 @@ function DonationSummaryTab() {
                     <td className="py-2 text-text-primary">{row.categoryName}</td>
                     <td className="py-2 text-center text-text-secondary">{row.count}</td>
                     <td className="py-2 text-right font-semibold text-text-primary">
-                      ₹{parseFloat(row.total).toLocaleString('en-IN')}
+                      ₹{fmtINR(row.total)}
                     </td>
                   </tr>
                 ))}
@@ -195,7 +196,7 @@ function EightyGTab() {
             <div className="rounded-lg bg-bg-surface border border-border-subtle p-4">
               <p className="text-caption text-text-muted uppercase tracking-wide">80G Eligible Total</p>
               <p className="mt-1 text-h2 font-bold text-text-primary">
-                ₹{parseFloat(data.totalEligibleAmount).toLocaleString('en-IN')}
+                ₹{fmtINR(data.totalEligibleAmount)}
               </p>
             </div>
             <div className="rounded-lg bg-bg-surface border border-border-subtle p-4">
@@ -227,7 +228,7 @@ function EightyGTab() {
                       })}
                     </td>
                     <td className="py-2 text-right font-semibold text-text-primary">
-                      ₹{parseFloat(d.amount).toLocaleString('en-IN')}
+                      ₹{fmtINR(d.amount)}
                     </td>
                   </tr>
                 ))}
@@ -274,7 +275,7 @@ function DaySheetTab() {
                   <div key={label} className="rounded-lg bg-bg-surface border border-border-subtle p-4">
                     <p className="text-caption text-text-muted uppercase tracking-wide">{label}</p>
                     <p className={`mt-1 text-h2 font-bold ${colorClass}`}>
-                      ₹{parseFloat(value).toLocaleString('en-IN')}
+                      ₹{fmtINR(value)}
                     </p>
                   </div>
                 ))}
@@ -310,7 +311,7 @@ function DaySheetTab() {
                           </td>
                           <td className="py-2 text-text-secondary">{b.sankalpaName ?? '—'}</td>
                           <td className="py-2 text-right font-semibold text-text-primary">
-                            ₹{parseFloat(b.amount).toLocaleString('en-IN')}
+                            ₹{fmtINR(b.amount)}
                           </td>
                           <td className="py-2">
                             <Badge label={b.status} />
@@ -343,7 +344,7 @@ function DaySheetTab() {
                           {d.receiptNumber ?? '—'}
                         </td>
                         <td className="py-2 text-right font-semibold text-success-DEFAULT">
-                          ₹{parseFloat(d.amount).toLocaleString('en-IN')}
+                          ₹{fmtINR(d.amount)}
                         </td>
                         <td className="py-2">
                           <Badge label={d.status} />
@@ -395,7 +396,7 @@ function LedgerReportTab() {
               <div key={label} className="rounded-lg bg-bg-surface border border-border-subtle p-4">
                 <p className="text-caption text-text-muted uppercase tracking-wide">{label}</p>
                 <p className={`mt-1 text-h2 font-bold ${colorClass}`}>
-                  ₹{parseFloat(value).toLocaleString('en-IN')}
+                  ₹{fmtINR(value)}
                 </p>
               </div>
             ))}
@@ -423,13 +424,13 @@ function LedgerReportTab() {
                             : <span className="text-text-muted italic">Unallocated</span>}
                         </td>
                         <td className="py-2 text-right text-success-DEFAULT font-medium">
-                          ₹{parseFloat(row.totalIncome).toLocaleString('en-IN')}
+                          ₹{fmtINR(row.totalIncome)}
                         </td>
                         <td className="py-2 text-right text-danger-DEFAULT font-medium">
-                          ₹{parseFloat(row.totalExpense).toLocaleString('en-IN')}
+                          ₹{fmtINR(row.totalExpense)}
                         </td>
                         <td className={`py-2 text-right font-semibold ${net >= 0 ? 'text-text-primary' : 'text-danger-DEFAULT'}`}>
-                          ₹{net.toLocaleString('en-IN')}
+                          ₹{fmtINR(net)}
                         </td>
                       </tr>
                     );

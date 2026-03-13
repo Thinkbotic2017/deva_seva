@@ -10,6 +10,8 @@ import {
   type SevaBookingFilters, type CreateSevaBookingDto,
 } from '@/api/sevas.api';
 import { apiGet, apiPost, apiPatch } from '@/lib/api-client';
+import { fmtINR } from '@/lib/format';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import type { DevoteeDetail } from '@/api/devotees.api';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -59,27 +61,6 @@ function emptyForm(): CreateSevaBookingDto {
   };
 }
 
-// ─── Loading skeleton ─────────────────────────────────────────────────────────
-
-function TableSkeleton() {
-  return (
-    <tbody>
-      {Array.from({ length: 8 }).map((_, i) => (
-        <tr key={i} className="border-b border-border-subtle">
-          {Array.from({ length: 7 }).map((_, j) => (
-            <td key={j} className="px-4 py-3">
-              <div
-                className="h-4 bg-bg-surface-2 rounded animate-pulse"
-                style={{ width: `${55 + (j * 11) % 45}%` }}
-              />
-            </td>
-          ))}
-        </tr>
-      ))}
-    </tbody>
-  );
-}
-
 // ─── Mobile card ──────────────────────────────────────────────────────────────
 
 interface BookingCardProps {
@@ -108,7 +89,7 @@ function BookingCard({ b, sevaTypeName }: BookingCardProps) {
           {b.devoteePhone && <p className="text-caption text-text-muted">{b.devoteePhone}</p>}
         </div>
         <p className="text-label font-semibold text-text-primary flex-shrink-0">
-          ₹{parseFloat(b.amount).toLocaleString('en-IN')}
+          ₹{fmtINR(b.amount)}
         </p>
       </div>
       <p className="text-body text-text-secondary truncate">{sevaTypeName}</p>
@@ -312,7 +293,7 @@ export function SevaBookingsPage() {
             </thead>
 
             {isLoading ? (
-              <TableSkeleton />
+              <tbody><TableSkeleton rows={8} columns={7} /></tbody>
             ) : isError ? (
               <tbody>
                 <tr>
@@ -353,7 +334,7 @@ export function SevaBookingsPage() {
                       <p className="text-caption text-text-muted">{b.timeSlot}</p>
                     </td>
                     <td className="px-4 py-3 text-right text-label font-semibold text-text-primary">
-                      ₹{parseFloat(b.amount).toLocaleString('en-IN')}
+                      ₹{fmtINR(b.amount)}
                     </td>
                     <td className="px-4 py-3 text-body text-text-secondary">{b.paymentMode}</td>
                     <td className="px-4 py-3">
@@ -371,7 +352,7 @@ export function SevaBookingsPage() {
           {isLoading ? (
             <div className="divide-y divide-border-subtle">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="p-4 space-y-2">
+                <div key={`skeleton-card-${i}`} className="p-4 space-y-2">
                   <div className="flex justify-between">
                     <div className="h-4 w-32 bg-bg-surface-2 rounded animate-pulse" />
                     <div className="h-4 w-16 bg-bg-surface-2 rounded animate-pulse" />

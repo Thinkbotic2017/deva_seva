@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { fmtINR } from '@/lib/format';
 import type { PublicSevaType, PublicTemple, InitiateResult, PublicSevaPayload, PricingTier } from '@/api/public.api';
 import { initiateSeva } from '@/api/public.api';
 
@@ -52,8 +53,8 @@ export function PublicSevaTab({ temple, sevaTypes }: Props) {
   const [sankalpaName, setSankalpaName] = useState('');
   const [gotra, setGotra] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const currentSeva = sevaTypes.find((s) => s.id === sevaTypeId) ?? null;
 
@@ -88,7 +89,7 @@ export function PublicSevaTab({ temple, sevaTypes }: Props) {
     if (gotra.trim()) payload.gotra = gotra.trim();
 
     try {
-      setLoading(true);
+      setIsLoading(true);
       await loadRazorpayScript();
       const result: InitiateResult = await initiateSeva(temple.slug, payload);
 
@@ -105,7 +106,7 @@ export function PublicSevaTab({ temple, sevaTypes }: Props) {
         },
         theme: { color: '#E8530A' },
         handler: () => {
-          setSuccess(true);
+          setIsSuccess(true);
         },
       };
 
@@ -114,7 +115,7 @@ export function PublicSevaTab({ temple, sevaTypes }: Props) {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   }
 
@@ -128,7 +129,7 @@ export function PublicSevaTab({ temple, sevaTypes }: Props) {
     );
   }
 
-  if (success) {
+  if (isSuccess) {
     return (
       <div className="max-w-lg mx-auto bg-bg-surface rounded-2xl shadow-modal border border-border-subtle p-6 md:p-8">
         <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -142,7 +143,7 @@ export function PublicSevaTab({ temple, sevaTypes }: Props) {
             Your seva has been booked for {sevaDate}. A confirmation will be sent to your WhatsApp shortly.
           </p>
           <button
-            onClick={() => { setSuccess(false); setDevoteeName(''); setDevoteePhone(''); setSankalpaName(''); setGotra(''); }}
+            onClick={() => { setIsSuccess(false); setDevoteeName(''); setDevoteePhone(''); setSankalpaName(''); setGotra(''); }}
             className="w-full py-4 rounded-xl bg-brand-primary text-white font-bold text-base hover:bg-brand-primary-hover active:scale-[0.98] transition-all"
           >
             Book Another Seva
@@ -190,7 +191,7 @@ export function PublicSevaTab({ temple, sevaTypes }: Props) {
                   }`}
                 >
                   <div className="font-medium text-sm">{tier.name}</div>
-                  <div className="text-brand-primary font-semibold text-sm">₹{tier.price.toLocaleString('en-IN')}</div>
+                  <div className="text-brand-primary font-semibold text-sm">₹{fmtINR(tier.price)}</div>
                   {tier.description && <div className="text-xs text-text-muted mt-0.5">{tier.description}</div>}
                 </button>
               ))}
@@ -299,10 +300,10 @@ export function PublicSevaTab({ temple, sevaTypes }: Props) {
 
         <button
           type="submit"
-          disabled={loading || !selectedTier}
+          disabled={isLoading || !selectedTier}
           className="w-full py-4 rounded-xl bg-brand-primary text-white font-bold text-base hover:bg-brand-primary-hover active:scale-[0.98] transition-all disabled:opacity-50"
         >
-          {loading ? 'Processing…' : `Book Seva — ₹${selectedTier?.price.toLocaleString('en-IN') ?? '—'}`}
+          {isLoading ? 'Processing…' : `Book Seva — ₹${selectedTier ? fmtINR(selectedTier.price) : '—'}`}
         </button>
       </form>
     </div>

@@ -10,6 +10,8 @@ import {
   type DonationFilters, type CreateDonationDto,
 } from '@/api/donations.api';
 import { apiGet, apiPost, apiPatch } from '@/lib/api-client';
+import { fmtINR } from '@/lib/format';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import type { DevoteeDetail } from '@/api/devotees.api';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -60,27 +62,6 @@ function emptyForm(): CreateDonationDto {
   };
 }
 
-// ─── Loading skeleton ─────────────────────────────────────────────────────────
-
-function TableSkeleton() {
-  return (
-    <tbody>
-      {Array.from({ length: 8 }).map((_, i) => (
-        <tr key={i} className="border-b border-border-subtle">
-          {Array.from({ length: 7 }).map((_, j) => (
-            <td key={j} className="px-4 py-3">
-              <div
-                className="h-4 bg-bg-surface-2 rounded animate-pulse"
-                style={{ width: `${60 + (j * 13) % 40}%` }}
-              />
-            </td>
-          ))}
-        </tr>
-      ))}
-    </tbody>
-  );
-}
-
 // ─── Mobile card (shown instead of table row on small screens) ────────────────
 
 function DonationCard({
@@ -99,7 +80,7 @@ function DonationCard({
         </div>
         <div className="text-right flex-shrink-0">
           <p className="text-label font-semibold text-text-primary">
-            ₹{parseFloat(d.amount).toLocaleString('en-IN')}
+            ₹{fmtINR(d.amount)}
           </p>
           {d.is80gEligible && (
             <span className="text-caption text-info-DEFAULT">80G</span>
@@ -328,7 +309,7 @@ export function DonationsPage() {
             </thead>
 
             {isLoading ? (
-              <TableSkeleton />
+              <tbody><TableSkeleton rows={8} columns={7} /></tbody>
             ) : isError ? (
               <tbody>
                 <tr>
@@ -363,7 +344,7 @@ export function DonationsPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className="text-label font-semibold text-text-primary">
-                        ₹{parseFloat(d.amount).toLocaleString('en-IN')}
+                        ₹{fmtINR(d.amount)}
                       </span>
                       {d.is80gEligible && (
                         <span className="ml-1.5 text-caption text-info-DEFAULT">80G</span>
@@ -388,7 +369,7 @@ export function DonationsPage() {
           {isLoading ? (
             <div className="divide-y divide-border-subtle">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="p-4 space-y-2">
+                <div key={`skeleton-card-${i}`} className="p-4 space-y-2">
                   <div className="flex justify-between">
                     <div className="h-4 w-32 bg-bg-surface-2 rounded animate-pulse" />
                     <div className="h-4 w-16 bg-bg-surface-2 rounded animate-pulse" />

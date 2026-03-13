@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { fmtINR } from '@/lib/format';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -47,27 +49,6 @@ function emptyForm(): EntryFormState {
   return { amount: 0, description: '', entryDate: todayIST() };
 }
 
-// ─── Loading skeleton ─────────────────────────────────────────────────────────
-
-function TableSkeleton() {
-  return (
-    <tbody>
-      {Array.from({ length: 8 }).map((_, i) => (
-        <tr key={i} className="border-b border-border-subtle">
-          {Array.from({ length: 5 }).map((_, j) => (
-            <td key={j} className="px-4 py-3">
-              <div
-                className="h-4 bg-bg-surface-2 rounded animate-pulse"
-                style={{ width: `${55 + (j * 15) % 45}%` }}
-              />
-            </td>
-          ))}
-        </tr>
-      ))}
-    </tbody>
-  );
-}
-
 // ─── Summary card ─────────────────────────────────────────────────────────────
 
 function SummaryCard({
@@ -85,9 +66,7 @@ function SummaryCard({
         <div className="mt-2 h-8 w-28 bg-bg-surface-2 rounded animate-pulse" />
       ) : (
         <p className={`mt-1 text-h2 font-bold ${colorClass}`}>
-          ₹{typeof value === 'string'
-            ? parseFloat(value).toLocaleString('en-IN')
-            : (value ?? 0).toLocaleString('en-IN')}
+          ₹{fmtINR(value ?? 0)}
         </p>
       )}
     </div>
@@ -251,7 +230,7 @@ function LedgerCard({
         <span className={`text-label font-semibold flex-shrink-0 ${
           entry.type === 'INCOME' ? 'text-success-DEFAULT' : 'text-danger-DEFAULT'
         }`}>
-          {entry.type === 'EXPENSE' ? '−' : '+'}₹{parseFloat(entry.amount).toLocaleString('en-IN')}
+          {entry.type === 'EXPENSE' ? '−' : '+'}₹{fmtINR(entry.amount)}
         </span>
       </div>
       <div className="flex items-center gap-2 flex-wrap mt-2">
@@ -409,7 +388,7 @@ export function FinancePage() {
             </thead>
 
             {isLoading ? (
-              <TableSkeleton />
+              <tbody><TableSkeleton rows={8} columns={5} /></tbody>
             ) : isError ? (
               <tbody>
                 <tr>
@@ -452,7 +431,7 @@ export function FinancePage() {
                       <span className={`text-label font-semibold ${
                         entry.type === 'INCOME' ? 'text-success-DEFAULT' : 'text-danger-DEFAULT'
                       }`}>
-                        {entry.type === 'EXPENSE' ? '−' : '+'}₹{parseFloat(entry.amount).toLocaleString('en-IN')}
+                        {entry.type === 'EXPENSE' ? '−' : '+'}₹{fmtINR(entry.amount)}
                       </span>
                     </td>
                   </tr>
@@ -467,7 +446,7 @@ export function FinancePage() {
           {isLoading ? (
             <div className="divide-y divide-border-subtle">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="p-4 space-y-2">
+                <div key={`skeleton-card-${i}`} className="p-4 space-y-2">
                   <div className="flex justify-between">
                     <div className="h-4 w-40 bg-bg-surface-2 rounded animate-pulse" />
                     <div className="h-4 w-16 bg-bg-surface-2 rounded animate-pulse" />
