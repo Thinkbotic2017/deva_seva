@@ -1,6 +1,17 @@
 import { useAuthStore } from '@/store/auth.store';
 import { useNavigate } from 'react-router-dom';
 import { clearAccessToken } from '@/store/auth.store';
+
+const ROLE_LABELS: Record<string, string> = {
+  SUPER_ADMIN:       'Super Admin',
+  ADMIN:             'Admin',
+  ACCOUNTANT:        'Accountant',
+  COUNTER_STAFF:     'Counter Staff',
+  INVENTORY_MANAGER: 'Inventory Manager',
+  HEAD_PRIEST:       'Head Priest',
+  PRIEST:            'Priest',
+  TRUSTEE:           'Trustee',
+};
 import { queryClient } from '@/lib/query-client';
 import { apiPost } from '@/lib/api-client';
 
@@ -35,7 +46,7 @@ export function Header() {
           <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">
               <p className="text-label text-text-primary leading-tight">{user.fullName}</p>
-              <p className="text-caption text-text-muted capitalize leading-tight">{user.role.toLowerCase().replace(/_/g, ' ')}</p>
+              <p className="text-caption text-text-muted leading-tight">{ROLE_LABELS[user.role] ?? user.role}</p>
             </div>
             <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-primary font-semibold text-sm flex-shrink-0">
               {user.fullName.charAt(0).toUpperCase()}

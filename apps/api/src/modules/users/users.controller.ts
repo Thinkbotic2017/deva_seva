@@ -36,10 +36,10 @@ export class UsersController {
   /**
    * POST /users/invite
    * Invites a new staff member to the temple.
-   * ADMIN only.
+   * SUPER_ADMIN and ADMIN only.
    */
   @Post('invite')
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   async inviteUser(
     @CurrentUser() user: JwtPayload,
     @Body() dto: InviteUserDto,
@@ -50,10 +50,10 @@ export class UsersController {
   /**
    * GET /users
    * Lists all staff members of the temple with pagination.
-   * ADMIN and ACCOUNTANT can view the staff list.
+   * SUPER_ADMIN, ADMIN, and ACCOUNTANT can view the staff list.
    */
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.ACCOUNTANT)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.ACCOUNTANT)
   async listUsers(
     @CurrentUser() user: JwtPayload,
     @Query() query: ListUsersQueryDto,
@@ -64,10 +64,10 @@ export class UsersController {
   /**
    * PATCH /users/:id/role
    * Changes the role of a staff member.
-   * ADMIN only. Cannot assign SUPER_ADMIN.
+   * SUPER_ADMIN and ADMIN only. Cannot assign SUPER_ADMIN.
    */
   @Patch(':id/role')
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   async updateRole(
     @CurrentUser() user: JwtPayload,
     @Param('id') userId: string,
@@ -79,11 +79,11 @@ export class UsersController {
   /**
    * POST /users/:id/deactivate
    * Deactivates a staff member (sets isActive=false).
-   * ADMIN only. Cannot deactivate own account.
+   * SUPER_ADMIN and ADMIN only. Cannot deactivate own account.
    */
   @Post(':id/deactivate')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   async deactivate(
     @CurrentUser() user: JwtPayload,
     @Param('id') userId: string,

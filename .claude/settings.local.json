@@ -19,7 +19,8 @@
       "Bash(cd /d/Software/deva_seva/apps/api && node --version && npx jest --passWithNoTests 2>&1 | tail -20)",
       "Bash(npx tsc:*)",
       "Bash(npx jest:*)",
-      "Bash(pnpm install:*)"
+      "Bash(pnpm install:*)",
+      "Bash(find \"D:\\\\Software\\\\deva_seva\\\\apps\\\\api\\\\src\\\\modules\" -type d -name \"*user*\" -o -type d -name \"*staff*\" 2>/dev/null | head -20)"
     ]
   }
 }

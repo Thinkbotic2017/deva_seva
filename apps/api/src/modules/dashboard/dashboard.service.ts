@@ -182,44 +182,76 @@ export class DashboardService {
 
   // ─── Private query helpers ─────────────────────────────────────────────────
 
-  /** SQL SUM + COUNT for today's confirmed donations. */
+  /**
+   * Returns today's date and this month's start date in IST (UTC+5:30).
+   *
+   * PostgreSQL's CURRENT_DATE uses the DB server's timezone (UTC on most hosts).
+   * Querying against UTC midnight would miss donations recorded between
+   * 00:00–05:30 IST (which fall on the previous UTC date) and over-count
+   * donations from the next IST day after 18:30 UTC.
+   *
+   * We shift by +5:30 to get the IST calendar date, then format as 'YYYY-MM-DD'
+   * to pass as a bound parameter. Since payment_date / seva_date are `date`
+   * columns (no time component), string comparison is exact.
+   */
+  private istDates(): { todayIST: string; monthStartIST: string } {
+    // Shift current UTC instant to IST by adding 5h 30m
+    const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+
+    const yyyy = nowIST.getUTCFullYear();
+    const mm   = String(nowIST.getUTCMonth() + 1).padStart(2, '0');
+    const dd   = String(nowIST.getUTCDate()).padStart(2, '0');
+
+    return {
+      todayIST:      `${yyyy}-${mm}-${dd}`,
+      monthStartIST: `${yyyy}-${mm}-01`,
+    };
+  }
+
+  /** SQL SUM + COUNT for today's confirmed donations (IST date). */
   private async queryTodayDonations(
     templeId: string,
   ): Promise<{ count: string; total: string }> {
+    const { todayIST } = this.istDates();
+
     const row = await this.donationRepo
       .createQueryBuilder('d')
       .select('COUNT(d.id)', 'count')
       .addSelect('COALESCE(SUM(d.amount::numeric), 0)', 'total')
       .where('d.temple_id = :templeId', { templeId })
-      .andWhere('d.payment_date = CURRENT_DATE')
+      .andWhere('d.payment_date = :today', { today: todayIST })
       .andWhere('d.status IN (:...statuses)', { statuses: CONFIRMED_STATUSES })
       .andWhere('d.deleted_at IS NULL')
       .getRawOne<{ count: string; total: string }>();
     return row ?? { count: '0', total: '0' };
   }
 
-  /** SQL SUM for this calendar month's confirmed donations. */
+  /** SQL SUM for this calendar month's confirmed donations (IST month start). */
   private async queryMonthDonations(
     templeId: string,
   ): Promise<{ total: string }> {
+    const { monthStartIST } = this.istDates();
+
     const row = await this.donationRepo
       .createQueryBuilder('d')
       .select('COALESCE(SUM(d.amount::numeric), 0)', 'total')
       .where('d.temple_id = :templeId', { templeId })
-      .andWhere("d.payment_date >= DATE_TRUNC('month', CURRENT_DATE)")
+      .andWhere('d.payment_date >= :monthStart', { monthStart: monthStartIST })
       .andWhere('d.status IN (:...statuses)', { statuses: CONFIRMED_STATUSES })
       .andWhere('d.deleted_at IS NULL')
       .getRawOne<{ total: string }>();
     return row ?? { total: '0' };
   }
 
-  /** SQL COUNT for upcoming pending/confirmed seva bookings. */
+  /** SQL COUNT for upcoming pending/confirmed seva bookings (IST today). */
   private async queryPendingSevaCount(templeId: string): Promise<number> {
+    const { todayIST } = this.istDates();
+
     return this.sevaBookingRepo
       .createQueryBuilder('sb')
       .where('sb.temple_id = :templeId', { templeId })
       .andWhere('sb.status IN (:...statuses)', { statuses: PENDING_SEVA_STATUSES })
-      .andWhere('sb.seva_date >= CURRENT_DATE')
+      .andWhere('sb.seva_date >= :today', { today: todayIST })
       .andWhere('sb.deleted_at IS NULL')
       .getCount();
   }

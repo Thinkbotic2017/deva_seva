@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { useAuthStore } from '@/store/auth.store';
 
 interface NavItem {
   path: string;
@@ -17,7 +18,23 @@ const NAV_ITEMS: NavItem[] = [
   { path: '/settings',  label: 'Settings',   icon: '⚙' },
 ];
 
+/** Paths each role is allowed to see. Unlisted roles fall back to dashboard only. */
+const ROLE_ALLOWED_PATHS: Record<string, string[]> = {
+  SUPER_ADMIN:       ['/dashboard', '/donations', '/sevas', '/devotees', '/finance', '/reports', '/users', '/settings'],
+  ADMIN:             ['/dashboard', '/donations', '/sevas', '/devotees', '/finance', '/reports', '/users', '/settings'],
+  ACCOUNTANT:        ['/dashboard', '/finance', '/reports'],
+  COUNTER_STAFF:     ['/dashboard', '/donations', '/sevas'],
+  PRIEST:            ['/dashboard', '/sevas'],
+  HEAD_PRIEST:       ['/dashboard', '/sevas'],
+  INVENTORY_MANAGER: ['/dashboard', '/finance', '/reports'],
+  TRUSTEE:           ['/dashboard', '/finance', '/reports'],
+};
+
 export function Sidebar() {
+  const role = useAuthStore((s) => s.user?.role ?? '');
+  const allowedPaths = ROLE_ALLOWED_PATHS[role] ?? ['/dashboard'];
+  const visibleItems = NAV_ITEMS.filter((item) => allowedPaths.includes(item.path));
+
   return (
     <aside className="w-56 flex-shrink-0 bg-surface border-r border-border flex flex-col h-screen sticky top-0">
       {/* Logo / brand */}
@@ -30,7 +47,7 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 px-2">
-        {NAV_ITEMS.map((item) => (
+        {visibleItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}

@@ -1,5 +1,16 @@
 import { useDashboardStats, useDashboardActivity } from '@/api/dashboard.api';
+import { useFinanceSummary } from '@/api/finance.api';
 import { StatCard } from '@/components/ui/StatCard';
+
+// Current month date range for the finance summary cards
+function currentMonthRange(): { from: string; to: string } {
+  const now = new Date();
+  const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+  const to   = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+  return { from, to };
+}
+
+const { from: monthFrom, to: monthTo } = currentMonthRange();
 
 /**
  * DashboardPage — live KPI stats + recent activity feed.
@@ -7,7 +18,8 @@ import { StatCard } from '@/components/ui/StatCard';
  */
 export function DashboardPage() {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
-  const { data: activity, isLoading: activityLoading } = useDashboardActivity();
+  const { data: activity, isLoading: activityLoading } = useDashboardActivity(5);
+  const { data: finance, isLoading: financeLoading } = useFinanceSummary(monthFrom, monthTo);
 
   function formatCurrency(amount: string | number | undefined): string {
     if (amount === undefined || amount === null) return '₹0';
@@ -29,6 +41,8 @@ export function DashboardPage() {
     if (diffHrs < 24) return `${diffHrs}h ago`;
     return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
   }
+
+  const netBalance = finance ? parseFloat(finance.netBalance) : 0;
 
   return (
     <div className="space-y-6">
@@ -72,6 +86,43 @@ export function DashboardPage() {
           iconColor="bg-green-500/10 text-green-400"
           loading={statsLoading}
         />
+      </div>
+
+      {/* Finance summary — this month */}
+      <div>
+        <h2 className="text-h3 font-semibold text-text-primary mb-3">Finance — This Month</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatCard
+            label="Income"
+            value={financeLoading ? '' : formatCurrency(finance?.totalIncome)}
+            sub="total receipts"
+            icon="↑"
+            iconColor="bg-success/10 text-success"
+            loading={financeLoading}
+          />
+          <StatCard
+            label="Expense"
+            value={financeLoading ? '' : formatCurrency(finance?.totalExpense)}
+            sub="total outflows"
+            icon="↓"
+            iconColor="bg-danger/10 text-danger"
+            loading={financeLoading}
+          />
+          <StatCard
+            label="Net Balance"
+            value={financeLoading ? '' : formatCurrency(finance?.netBalance)}
+            sub="income minus expense"
+            icon="="
+            iconColor={
+              financeLoading
+                ? 'bg-surface-2 text-text-muted'
+                : netBalance >= 0
+                  ? 'bg-primary/10 text-primary'
+                  : 'bg-danger/10 text-danger'
+            }
+            loading={financeLoading}
+          />
+        </div>
       </div>
 
       {/* Recent activity */}
