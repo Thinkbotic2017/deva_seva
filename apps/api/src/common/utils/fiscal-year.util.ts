@@ -64,6 +64,20 @@ export class FiscalYearUtil {
   }
 
   /**
+   * Returns the IST wall-clock date as a 'YYYY-MM-DD' string.
+   * Use this when you have a server-side Date (e.g. new Date() or a Razorpay
+   * capture timestamp) and need to store it as a date column without UTC shift.
+   */
+  toIstDateString(date: Date): string {
+    const { year, month } = toIstComponents(date);
+    const istMs = date.getTime() + IST_OFFSET_MS;
+    const istDate = new Date(istMs);
+    const dd = String(istDate.getUTCDate()).padStart(2, '0');
+    const mm = String(month).padStart(2, '0');
+    return `${year}-${mm}-${dd}`;
+  }
+
+  /**
    * Returns the UTC Date for April 1 00:00:00 IST of the given fiscal year.
    * Throws if the format is invalid.
    */

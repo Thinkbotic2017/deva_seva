@@ -51,14 +51,13 @@ export class PdfService {
    * All CSS is inline. No references to external resources.
    */
   private buildReceiptHtml(donation: Donation, temple: Temple): string {
-    const paymentDate =
-      donation.paymentDate instanceof Date
-        ? donation.paymentDate.toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric',
-          })
-        : String(donation.paymentDate);
+    const [pyear, pmonth, pday] = donation.paymentDate.split('-').map(Number);
+    const dateObj = new Date(pyear!, pmonth! - 1, pday!);
+    const paymentDate = dateObj.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
 
     const amount = parseFloat(donation.amount).toLocaleString('en-IN', {
       style: 'currency',

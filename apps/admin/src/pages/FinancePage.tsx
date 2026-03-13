@@ -13,24 +13,44 @@ import {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Returns the first and last day of the current calendar month. */
-function currentMonthRange(): { from: string; to: string } {
-  const now = new Date();
-  const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-  const to   = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
-  return { from, to };
+function todayIST(): string {
+  const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+  const yyyy = nowIST.getUTCFullYear();
+  const mm = String(nowIST.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(nowIST.getUTCDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
 }
 
-const today = new Date().toISOString().split('T')[0];
+function formatDateString(dateStr: string): string {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year!, month! - 1, day!).toLocaleDateString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric',
+  });
+}
+
+/** Returns the first and last day of the current calendar month in IST. */
+function currentMonthRange(): { from: string; to: string } {
+  const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+  const year = nowIST.getUTCFullYear();
+  const month = nowIST.getUTCMonth();
+  const firstDay = new Date(Date.UTC(year, month, 1));
+  const lastDay  = new Date(Date.UTC(year, month + 1, 0));
+  const fmt = (d: Date) =>
+    `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+  return { from: fmt(firstDay), to: fmt(lastDay) };
+}
+
 const { from: defaultFrom, to: defaultTo } = currentMonthRange();
 
 type EntryFormState = Omit<CreateLedgerEntryDto, 'type'>;
 
-const EMPTY_FORM: EntryFormState = {
-  amount: 0,
-  description: '',
-  entryDate: today,
-};
+function emptyForm(): EntryFormState {
+  return {
+    amount: 0,
+    description: '',
+    entryDate: todayIST(),
+  };
+}
 
 // ─── Loading skeleton ─────────────────────────────────────────────────────────
 
@@ -85,7 +105,7 @@ function EntryForm({
   type: 'INCOME' | 'EXPENSE';
   onClose: () => void;
 }) {
-  const [form, setForm] = useState<EntryFormState>(EMPTY_FORM);
+  const [form, setForm] = useState<EntryFormState>(emptyForm());
   const [errors, setErrors] = useState<Partial<Record<keyof EntryFormState, string>>>({});
 
   const { data: categories = [] } = useFinanceCategories(type);
@@ -119,7 +139,7 @@ function EntryForm({
     };
     mutation.mutate(dto, {
       onSuccess: () => {
-        setForm(EMPTY_FORM);
+        setForm(emptyForm());
         onClose();
       },
     });
@@ -392,9 +412,7 @@ export function FinancePage() {
                 {filteredRows.map((entry) => (
                   <tr key={entry.id} className="border-b border-border hover:bg-surface-2 transition-colors">
                     <td className="px-4 py-3 text-caption text-text-muted whitespace-nowrap">
-                      {new Date(entry.entryDate).toLocaleDateString('en-IN', {
-                        day: '2-digit', month: 'short', year: 'numeric',
-                      })}
+                      {formatDateString(entry.entryDate)}
                     </td>
                     <td className="px-4 py-3">
                       <p className="text-body text-text-primary">{entry.description}</p>
@@ -442,7 +460,7 @@ export function FinancePage() {
         onClose={() => setOpenModal(null)}
         title="Add Income Entry"
       >
-        <EntryForm type="INCOME" onClose={() => setOpenModal(null)} />
+        <EntryForm key={openModal === 'INCOME' ? 'income-open' : 'income-closed'} type="INCOME" onClose={() => setOpenModal(null)} />
       </Modal>
 
       {/* Expense modal */}
@@ -451,7 +469,7 @@ export function FinancePage() {
         onClose={() => setOpenModal(null)}
         title="Add Expense Entry"
       >
-        <EntryForm type="EXPENSE" onClose={() => setOpenModal(null)} />
+        <EntryForm key={openModal === 'EXPENSE' ? 'expense-open' : 'expense-closed'} type="EXPENSE" onClose={() => setOpenModal(null)} />
       </Modal>
     </div>
   );

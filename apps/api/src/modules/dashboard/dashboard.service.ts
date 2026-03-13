@@ -38,7 +38,7 @@ export interface SevaActivity {
   id: string;
   devoteeName: string;
   amount: string;
-  sevaDate: Date;
+  sevaDate: string;
   status: SevaBookingStatus;
   createdAt: Date;
 }

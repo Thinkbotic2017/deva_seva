@@ -62,7 +62,7 @@ export interface Donation80GEntry {
   donorPhone?: string;
   donorPanMasked?: string;
   amount: string;
-  paymentDate: Date;
+  paymentDate: string;
   categoryName: string;
 }
 
@@ -331,7 +331,7 @@ export class ReportsService {
       donorPhone: r.d_donor_phone ?? undefined,
       donorPanMasked: r.d_donor_pan_masked ?? undefined,
       amount: parseFloat(r.d_amount).toFixed(2),
-      paymentDate: new Date(r.d_payment_date),
+      paymentDate: r.d_payment_date as string,
       categoryName: r.cat_name,
     }));
 
@@ -354,12 +354,12 @@ export class ReportsService {
     const [donations, sevaBookings] = await Promise.all([
       // All non-cancelled donations for the date
       this.donationRepo.find({
-        where: { templeId, paymentDate: new Date(query.date) as unknown as Date },
+        where: { templeId, paymentDate: query.date },
         order: { createdAt: 'ASC' },
       }),
       // All non-cancelled seva bookings for the date
       this.sevaBookingRepo.find({
-        where: { templeId, sevaDate: new Date(query.date) as unknown as Date },
+        where: { templeId, sevaDate: query.date },
         order: { timeSlot: 'ASC' },
       }),
     ]);

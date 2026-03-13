@@ -103,8 +103,8 @@ export class DonationsService {
       panMasked = maskPan(panUpper);
     }
 
-    const paymentDate = new Date(dto.paymentDate);
-    const fiscalYear = this.fiscalYearUtil.fromDate(paymentDate);
+    const paymentDateObj = new Date(dto.paymentDate);
+    const fiscalYear = this.fiscalYearUtil.fromDate(paymentDateObj);
     const amountStr = Number(dto.amount).toFixed(2);
 
     // Check 80G eligibility: temple must be registered AND category must be eligible
@@ -126,7 +126,7 @@ export class DonationsService {
         is80gEligible,
         isAnonymous: dto.isAnonymous ?? false,
         paymentReference: dto.paymentReference,
-        paymentDate,
+        paymentDate: dto.paymentDate,
         fiscalYear,
         recordedBy,
         notes: dto.notes,
@@ -138,7 +138,7 @@ export class DonationsService {
       await this.financeService.autoPostIncome(manager, {
         templeId,
         amount: amountStr,
-        entryDate: paymentDate,
+        entryDate: dto.paymentDate,
         description: `Donation — ${dto.donorName}`,
         donationId: inserted.id,
         recordedBy,
@@ -295,8 +295,9 @@ export class DonationsService {
     }
 
     const amountStr = Number(dto.amount).toFixed(2);
-    const paymentDate = new Date();
-    const fiscalYear = this.fiscalYearUtil.fromDate(paymentDate);
+    const now = new Date();
+    const paymentDate = this.fiscalYearUtil.toIstDateString(now);
+    const fiscalYear = this.fiscalYearUtil.fromDate(now);
     const is80gEligible = temple.is80gRegistered && category.is80gEligible;
 
     // Create a PENDING donation first so we have an ID for the Razorpay receipt field
@@ -395,20 +396,21 @@ export class DonationsService {
     }
 
     const fiscalYear = this.fiscalYearUtil.fromDate(captureDate);
+    const captureDateStr = this.fiscalYearUtil.toIstDateString(captureDate);
 
     // Atomic: update donation + post to ledger
     await this.dataSource.transaction(async (manager) => {
       await manager.update(Donation, donationId, {
         status: DonationStatus.CONFIRMED,
         razorpayPaymentId,
-        paymentDate: captureDate,
+        paymentDate: captureDateStr,
         fiscalYear,
       });
 
       await this.financeService.autoPostIncome(manager, {
         templeId: donation.templeId,
         amount: donation.amount,
-        entryDate: captureDate,
+        entryDate: captureDateStr,
         description: `Online donation — ${donation.donorName}`,
         donationId,
         fiscalYear,

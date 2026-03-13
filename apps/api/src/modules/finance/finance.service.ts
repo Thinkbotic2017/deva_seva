@@ -15,7 +15,8 @@ export interface AutoPostIncomeParams {
   templeId: string;
   /** Decimal string, e.g. '5100.00'. TypeORM stores decimal as string — never Number. */
   amount: string;
-  entryDate: Date;
+  /** ISO date string 'YYYY-MM-DD'. Pass a string — never a Date — to avoid UTC shift. */
+  entryDate: string;
   description: string;
   categoryId?: string;
   fundId?: string;
@@ -31,7 +32,8 @@ export interface AutoPostReversalParams {
   templeId: string;
   /** Same decimal string that was originally posted. */
   amount: string;
-  entryDate: Date;
+  /** ISO date string 'YYYY-MM-DD'. Pass a string — never a Date — to avoid UTC shift. */
+  entryDate: string;
   description: string;
   sevaBookingId: string;
   recordedBy?: string;
@@ -154,14 +156,14 @@ export class FinanceService {
     dto: CreateLedgerEntryDto,
     recordedBy: string,
   ): Promise<FinanceLedger> {
-    const entryDate = new Date(dto.entryDate);
-    const fiscalYear = this.fiscalYearUtil.fromDate(entryDate);
+    const entryDateObj = new Date(dto.entryDate);
+    const fiscalYear = this.fiscalYearUtil.fromDate(entryDateObj);
 
     const entry = this.ledgerRepo.create({
       templeId,
       type: dto.type,
       amount: Number(dto.amount).toFixed(2),
-      entryDate,
+      entryDate: dto.entryDate,
       description: dto.description,
       categoryId: dto.categoryId,
       fundId: dto.fundId,

@@ -75,8 +75,8 @@ export class SevaBookingService {
     dto: CreateSevaBookingDto,
     recordedBy: string,
   ): Promise<SevaBooking> {
-    const sevaDate = new Date(dto.sevaDate);
-    const fiscalYear = this.fiscalYearUtil.fromDate(sevaDate);
+    const sevaDateObj = new Date(dto.sevaDate);
+    const fiscalYear = this.fiscalYearUtil.fromDate(sevaDateObj);
     const amountStr = Number(dto.amount).toFixed(2);
 
     // Determine whether this is an offline (immediately confirmed) booking
@@ -95,7 +95,7 @@ export class SevaBookingService {
         devoteeId: dto.devoteeId,
         devoteeName: dto.devoteeName,
         devoteePhone: dto.devoteePhone,
-        sevaDate,
+        sevaDate: dto.sevaDate,
         timeSlot: dto.timeSlot,
         tierName: dto.tierName,
         amount: amountStr,
@@ -120,7 +120,7 @@ export class SevaBookingService {
         await this.financeService.autoPostIncome(manager, {
           templeId,
           amount: amountStr,
-          entryDate: sevaDate,
+          entryDate: dto.sevaDate,
           description: `Seva booking — ${dto.devoteeName}`,
           sevaBookingId: inserted.id,
           recordedBy,
@@ -265,7 +265,7 @@ export class SevaBookingService {
         await this.financeService.autoPostReversal(manager, {
           templeId,
           amount: booking.amount,
-          entryDate: now,
+          entryDate: this.fiscalYearUtil.toIstDateString(now),
           description: `Seva booking cancellation — ${booking.devoteeName} [${bookingId}]`,
           sevaBookingId: bookingId,
           recordedBy: cancelledBy,

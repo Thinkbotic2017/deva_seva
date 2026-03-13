@@ -25,8 +25,19 @@ export class FinanceLedger extends TenantBaseEntity {
   @Column({ name: 'amount', type: 'decimal', precision: 14, scale: 2 })
   amount: string; // TypeORM returns decimal as string
 
-  @Column({ name: 'entry_date', type: 'date' })
-  entryDate: Date;
+  @Column({
+    name: 'entry_date',
+    type: 'date',
+    transformer: {
+      to: (value: string | Date | null | undefined): string | null => {
+        if (!value) return null as any;
+        if (value instanceof Date) return value.toISOString().slice(0, 10);
+        return value;
+      },
+      from: (value: string | null): string | null => value,
+    },
+  })
+  entryDate: string;
 
   @Column({ name: 'description', type: 'varchar', length: 500 })
   description: string;

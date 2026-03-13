@@ -31,19 +31,34 @@ const STATUS_OPTIONS = [
   { value: 'CANCELLED',          label: 'Cancelled'        },
 ];
 
-const today = new Date().toISOString().split('T')[0];
+function todayIST(): string {
+  const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+  const yyyy = nowIST.getUTCFullYear();
+  const mm = String(nowIST.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(nowIST.getUTCDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
 
-const EMPTY_FORM: CreateDonationDto = {
-  categoryId: '',
-  donorName: '',
-  donorPhone: '',
-  amount: 0,
-  mode: 'CASH',
-  paymentDate: today,
-  pan: '',
-  isAnonymous: false,
-  notes: '',
-};
+function formatDateString(dateStr: string): string {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year!, month! - 1, day!).toLocaleDateString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric',
+  });
+}
+
+function emptyForm(): CreateDonationDto {
+  return {
+    categoryId: '',
+    donorName: '',
+    donorPhone: '',
+    amount: 0,
+    mode: 'CASH',
+    paymentDate: todayIST(),
+    pan: '',
+    isAnonymous: false,
+    notes: '',
+  };
+}
 
 // ─── Loading skeleton ─────────────────────────────────────────────────────────
 
@@ -68,7 +83,7 @@ function TableSkeleton() {
 export function DonationsPage() {
   const [filters, setFilters] = useState<DonationFilters>({ page: 1, limit: 20 });
   const [isModalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState<CreateDonationDto>(EMPTY_FORM);
+  const [form, setForm] = useState<CreateDonationDto>(emptyForm());
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof CreateDonationDto, string>>>({});
   const [devoteeId, setDevoteeId] = useState<string | null>(null);
   const [devoteeStatus, setDevoteeStatus] = useState<'found' | 'new' | null>(null);
@@ -89,7 +104,7 @@ export function DonationsPage() {
 
   function closeModal() {
     setModalOpen(false);
-    setForm(EMPTY_FORM);
+    setForm(emptyForm());
     setFormErrors({});
     setDevoteeId(null);
     setDevoteeStatus(null);
@@ -199,7 +214,7 @@ export function DonationsPage() {
             <p className="mt-0.5 text-caption text-text-muted">{meta.total} total records</p>
           )}
         </div>
-        <Button onClick={() => setModalOpen(true)}>+ New Donation</Button>
+        <Button onClick={() => { setForm(emptyForm()); setModalOpen(true); }}>+ New Donation</Button>
       </div>
 
       {/* Filters */}
@@ -320,9 +335,7 @@ export function DonationsPage() {
                       <Badge label={d.status} />
                     </td>
                     <td className="px-4 py-3 text-caption text-text-muted">
-                      {new Date(d.paymentDate).toLocaleDateString('en-IN', {
-                        day: '2-digit', month: 'short', year: 'numeric',
-                      })}
+                      {formatDateString(d.paymentDate)}
                     </td>
                   </tr>
                 ))}

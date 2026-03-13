@@ -85,8 +85,19 @@ export class Donation extends TenantBaseEntity {
   @Column({ name: 'payment_reference', type: 'varchar', nullable: true })
   paymentReference?: string;
 
-  @Column({ name: 'payment_date', type: 'date' })
-  paymentDate: Date;
+  @Column({
+    name: 'payment_date',
+    type: 'date',
+    transformer: {
+      to: (value: string | Date | null | undefined): string | null => {
+        if (!value) return null as any;
+        if (value instanceof Date) return value.toISOString().slice(0, 10);
+        return value;
+      },
+      from: (value: string | null): string | null => value,
+    },
+  })
+  paymentDate: string;
 
   /**
    * S3 key for the generated 80G PDF receipt.

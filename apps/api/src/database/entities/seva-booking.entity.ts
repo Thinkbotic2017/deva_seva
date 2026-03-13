@@ -46,8 +46,19 @@ export class SevaBooking extends TenantBaseEntity {
   @Column({ name: 'devotee_phone', type: 'varchar', length: 15, nullable: true })
   devoteePhone?: string;
 
-  @Column({ name: 'seva_date', type: 'date' })
-  sevaDate: Date;
+  @Column({
+    name: 'seva_date',
+    type: 'date',
+    transformer: {
+      to: (value: string | Date | null | undefined): string | null => {
+        if (!value) return null as any;
+        if (value instanceof Date) return value.toISOString().slice(0, 10);
+        return value;
+      },
+      from: (value: string | null): string | null => value,
+    },
+  })
+  sevaDate: string;
 
   /** Time slot in 24-hour HH:MM format, e.g. '07:00'. */
   @Column({ name: 'time_slot', type: 'varchar', length: 10 })

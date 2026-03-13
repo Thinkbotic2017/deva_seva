@@ -29,20 +29,35 @@ const PAYMENT_MODE_OPTIONS = [
   { value: 'ONLINE',label: 'Online'},
 ];
 
-const today = new Date().toISOString().split('T')[0];
+function todayIST(): string {
+  const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+  const yyyy = nowIST.getUTCFullYear();
+  const mm = String(nowIST.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(nowIST.getUTCDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
 
-const EMPTY_FORM: CreateSevaBookingDto = {
-  sevaTypeId: '',
-  devoteeName: '',
-  devoteePhone: '',
-  sevaDate: today,
-  timeSlot: '07:00',
-  tierName: '',
-  amount: 0,
-  paymentMode: 'CASH',
-  sankalpaName: '',
-  gotra: '',
-};
+function formatDateString(dateStr: string): string {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year!, month! - 1, day!).toLocaleDateString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric',
+  });
+}
+
+function emptyForm(): CreateSevaBookingDto {
+  return {
+    sevaTypeId: '',
+    devoteeName: '',
+    devoteePhone: '',
+    sevaDate: todayIST(),
+    timeSlot: '07:00',
+    tierName: '',
+    amount: 0,
+    paymentMode: 'CASH',
+    sankalpaName: '',
+    gotra: '',
+  };
+}
 
 // ─── Loading skeleton ─────────────────────────────────────────────────────────
 
@@ -67,7 +82,7 @@ function TableSkeleton() {
 export function SevaBookingsPage() {
   const [filters, setFilters] = useState<SevaBookingFilters>({ page: 1, limit: 20 });
   const [isModalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState<CreateSevaBookingDto>(EMPTY_FORM);
+  const [form, setForm] = useState<CreateSevaBookingDto>(emptyForm());
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof CreateSevaBookingDto, string>>>({});
   const [devoteeId, setDevoteeId] = useState<string | null>(null);
   const [devoteeStatus, setDevoteeStatus] = useState<'found' | 'new' | null>(null);
@@ -88,7 +103,7 @@ export function SevaBookingsPage() {
 
   function closeModal() {
     setModalOpen(false);
-    setForm(EMPTY_FORM);
+    setForm(emptyForm());
     setFormErrors({});
     setDevoteeId(null);
     setDevoteeStatus(null);
@@ -197,7 +212,7 @@ export function SevaBookingsPage() {
             <p className="mt-0.5 text-caption text-text-muted">{meta.total} total records</p>
           )}
         </div>
-        <Button onClick={() => setModalOpen(true)}>+ New Booking</Button>
+        <Button onClick={() => { setForm(emptyForm()); setModalOpen(true); }}>+ New Booking</Button>
       </div>
 
       {/* Filters */}
@@ -278,14 +293,14 @@ export function SevaBookingsPage() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <p className="text-body text-text-secondary">{b.sevaType?.name ?? '—'}</p>
+                      <p className="text-body text-text-secondary">
+                        {sevaTypes.find((t) => t.id === b.sevaTypeId)?.name ?? '—'}
+                      </p>
                       <p className="text-caption text-text-muted">{b.tierName}</p>
                     </td>
                     <td className="px-4 py-3">
                       <p className="text-body text-text-secondary">
-                        {new Date(b.sevaDate).toLocaleDateString('en-IN', {
-                          day: '2-digit', month: 'short', year: 'numeric',
-                        })}
+                        {formatDateString(b.sevaDate)}
                       </p>
                       <p className="text-caption text-text-muted">{b.timeSlot}</p>
                     </td>
