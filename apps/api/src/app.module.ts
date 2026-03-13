@@ -34,6 +34,7 @@ import { TempleModule } from './modules/temple/temple.module';
 import { UsersModule } from './modules/users/users.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { SuperAdminModule } from './modules/superadmin/superadmin.module';
+import { PublicModule } from './modules/public/public.module';
 
 @Module({
   imports: [
@@ -82,6 +83,7 @@ import { SuperAdminModule } from './modules/superadmin/superadmin.module';
     UsersModule,
     DashboardModule,
     SuperAdminModule,
+    PublicModule,
   ],
   controllers: [HealthController],
   providers: [

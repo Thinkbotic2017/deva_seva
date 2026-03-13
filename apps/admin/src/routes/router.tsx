@@ -10,6 +10,7 @@ import { FinancePage } from '@/pages/FinancePage';
 import { ReportsPage } from '@/pages/ReportsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { StaffPage } from '@/pages/StaffPage';
+import { PublicPortalPage } from '@/pages/public/PublicPortalPage';
 
 /**
  * Role allow-lists for route guards.
@@ -42,6 +43,10 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    path: '/portal/:slug',
+    element: <PublicPortalPage />,
   },
   {
     element: <ProtectedRoute />,

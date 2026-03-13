@@ -55,7 +55,7 @@ const MOCK_BOOKING: Partial<SevaBooking> = {
   templeId: TEMPLE_ID,
   sevaTypeId: SEVA_TYPE_ID,
   devoteeName: 'Ramesh Kumar',
-  sevaDate: new Date('2025-06-15'),
+  sevaDate: '2025-06-15',
   timeSlot: '07:00',
   amount: '1100.00',
   status: SevaBookingStatus.CONFIRMED,
