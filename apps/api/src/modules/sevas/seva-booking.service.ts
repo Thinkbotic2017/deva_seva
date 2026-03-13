@@ -285,6 +285,32 @@ export class SevaBookingService {
     return booking;
   }
 
+  /**
+   * Links an existing devotee to a seva booking.
+   * Safe to call multiple times (idempotent).
+   *
+   * @param templeId  From req.user.templeId (JWT). Never from dto.
+   * @param bookingId UUID of the seva booking.
+   * @param devoteeId UUID of the devotee to link.
+   */
+  async linkDevotee(
+    templeId: string,
+    bookingId: string,
+    devoteeId: string,
+  ): Promise<SevaBooking> {
+    const booking = await this.bookingRepo.findOne({
+      where: { id: bookingId, templeId },
+    });
+
+    if (!booking) {
+      throw new NotFoundException(`Seva booking ${bookingId} not found`);
+    }
+
+    await this.bookingRepo.update(bookingId, { devoteeId });
+    booking.devoteeId = devoteeId;
+    return booking;
+  }
+
   // ─── Private helpers ──────────────────────────────────────────────────────
 
   /**

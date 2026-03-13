@@ -91,6 +91,27 @@ export class SevaBookingController {
   }
 
   /**
+   * PATCH /sevas/bookings/:id/devotee
+   * Links an existing devotee record to a booking.
+   * Typically called right after booking creation when a new devotee has been registered.
+   */
+  @Patch(':id/devotee')
+  @Roles(
+    UserRole.ADMIN,
+    UserRole.COUNTER_STAFF,
+    UserRole.ACCOUNTANT,
+    UserRole.HEAD_PRIEST,
+  )
+  @HttpCode(HttpStatus.OK)
+  async linkDevotee(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Body('devoteeId') devoteeId: string,
+  ): Promise<SevaBooking> {
+    return this.sevaBookingService.linkDevotee(user.templeId, id, devoteeId);
+  }
+
+  /**
    * PATCH /sevas/bookings/:id/cancel
    * Cancels a booking. Only PENDING_PAYMENT and CONFIRMED bookings may be cancelled.
    */

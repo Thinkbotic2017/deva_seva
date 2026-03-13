@@ -9,6 +9,8 @@ import {
   useSevaBookings, useSevaTypes, useCreateSevaBooking,
   type SevaBookingFilters, type CreateSevaBookingDto,
 } from '@/api/sevas.api';
+import { apiGet, apiPost, apiPatch } from '@/lib/api-client';
+import type { DevoteeDetail } from '@/api/devotees.api';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -67,6 +69,9 @@ export function SevaBookingsPage() {
   const [isModalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<CreateSevaBookingDto>(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof CreateSevaBookingDto, string>>>({});
+  const [devoteeId, setDevoteeId] = useState<string | null>(null);
+  const [devoteeStatus, setDevoteeStatus] = useState<'found' | 'new' | null>(null);
+  const [devoteeFoundName, setDevoteeFoundName] = useState('');
 
   const { data, isLoading, isError } = useSevaBookings(filters);
   const { data: sevaTypes = [] } = useSevaTypes();
@@ -79,6 +84,46 @@ export function SevaBookingsPage() {
   function setField<K extends keyof CreateSevaBookingDto>(key: K, value: CreateSevaBookingDto[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
     setFormErrors((prev) => ({ ...prev, [key]: undefined }));
+  }
+
+  function closeModal() {
+    setModalOpen(false);
+    setForm(EMPTY_FORM);
+    setFormErrors({});
+    setDevoteeId(null);
+    setDevoteeStatus(null);
+    setDevoteeFoundName('');
+  }
+
+  async function handlePhoneChange(rawValue: string): Promise<void> {
+    setField('devoteePhone', rawValue);
+    const cleaned = rawValue.replace(/\D/g, '');
+
+    if (cleaned.length === 0) {
+      if (devoteeStatus === 'found') {
+        setForm((prev) => ({ ...prev, devoteePhone: rawValue, devoteeName: '' }));
+      }
+      setDevoteeId(null);
+      setDevoteeStatus(null);
+      setDevoteeFoundName('');
+      return;
+    }
+
+    if (!/^[6-9]\d{9}$/.test(cleaned)) return;
+
+    try {
+      const result = await apiGet<{ data: DevoteeDetail[]; total: number }>('/devotees', { search: cleaned, limit: 1 });
+      if (!result.data.length) throw new Error('not found');
+      const devotee = result.data[0];
+      setDevoteeId(devotee.id);
+      setDevoteeFoundName(devotee.name);
+      setDevoteeStatus('found');
+      setForm((prev) => ({ ...prev, devoteeName: devotee.name }));
+    } catch {
+      setDevoteeId(null);
+      setDevoteeFoundName('');
+      setDevoteeStatus('new');
+    }
   }
 
   function validate(): boolean {
@@ -103,15 +148,31 @@ export function SevaBookingsPage() {
     const dto: CreateSevaBookingDto = {
       ...form,
       devoteePhone: form.devoteePhone || undefined,
+      devoteeId: devoteeStatus === 'found' ? (devoteeId ?? undefined) : undefined,
       sankalpaName: form.sankalpaName || undefined,
       gotra: form.gotra || undefined,
     };
 
     createMutation.mutate(dto, {
-      onSuccess: () => {
-        setModalOpen(false);
-        setForm(EMPTY_FORM);
-        setFormErrors({});
+      onSuccess: (createdBooking) => {
+        // Fire-and-forget: register new devotee after booking is saved
+        if (devoteeStatus === 'new' && form.devoteePhone) {
+          const cleaned = form.devoteePhone.replace(/\D/g, '');
+          if (/^[6-9]\d{9}$/.test(cleaned)) {
+            void (async () => {
+              try {
+                const newDevotee = await apiPost<{ id: string }>('/devotees', {
+                  name: form.devoteeName,
+                  phone: cleaned,
+                });
+                await apiPatch(`/sevas/bookings/${createdBooking.id}/devotee`, { devoteeId: newDevotee.id });
+              } catch {
+                // silently ignore — booking is already saved
+              }
+            })();
+          }
+        }
+        closeModal();
       },
     });
   }
@@ -124,7 +185,6 @@ export function SevaBookingsPage() {
   })) ?? [];
 
   const sevaTypeOptions = sevaTypes.map((t) => ({ value: t.id, label: t.name }));
-  const sevaTypeFilterOptions = sevaTypeOptions;
   const meta = data?.meta;
 
   return (
@@ -153,7 +213,7 @@ export function SevaBookingsPage() {
         <div className="flex-1 min-w-[180px]">
           <Select
             label="Seva Type"
-            options={sevaTypeFilterOptions}
+            options={sevaTypeOptions}
             placeholder="All types"
             value={filters.sevaTypeId ?? ''}
             onChange={(e) => setFilter('sevaTypeId', e.target.value || undefined)}
@@ -255,7 +315,7 @@ export function SevaBookingsPage() {
       </div>
 
       {/* Create booking modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} title="New Seva Booking">
+      <Modal isOpen={isModalOpen} onClose={closeModal} title="New Seva Booking">
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           <Select
             label="Seva Type *"
@@ -270,23 +330,23 @@ export function SevaBookingsPage() {
             error={formErrors.sevaTypeId}
           />
 
-          <Input
-            label="Devotee Name *"
-            placeholder="Full name"
-            value={form.devoteeName}
-            onChange={(e) => setField('devoteeName', e.target.value)}
-            error={formErrors.devoteeName}
-          />
-
           <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Phone"
-              type="tel"
-              placeholder="98765 43210"
-              value={form.devoteePhone ?? ''}
-              onChange={(e) => setField('devoteePhone', e.target.value)}
-              error={formErrors.devoteePhone}
-            />
+            <div>
+              <Input
+                label="Phone"
+                type="tel"
+                placeholder="98765 43210"
+                value={form.devoteePhone ?? ''}
+                onChange={(e) => { void handlePhoneChange(e.target.value); }}
+                error={formErrors.devoteePhone}
+              />
+              {devoteeStatus === 'found' && (
+                <p className="mt-1 text-caption text-green-600">✓ Devotee found: {devoteeFoundName}</p>
+              )}
+              {devoteeStatus === 'new' && (
+                <p className="mt-1 text-caption text-amber-600">New devotee — will be registered on save</p>
+              )}
+            </div>
             <Input
               label="Sankalpa Name"
               placeholder="Name for puja"
@@ -294,6 +354,14 @@ export function SevaBookingsPage() {
               onChange={(e) => setField('sankalpaName', e.target.value)}
             />
           </div>
+
+          <Input
+            label="Devotee Name *"
+            placeholder="Full name"
+            value={form.devoteeName}
+            onChange={(e) => setField('devoteeName', e.target.value)}
+            error={formErrors.devoteeName}
+          />
 
           <div className="grid grid-cols-2 gap-3">
             <Input
@@ -366,7 +434,7 @@ export function SevaBookingsPage() {
           )}
 
           <div className="flex gap-3 pt-2 border-t border-border">
-            <Button type="button" variant="ghost" className="flex-1" onClick={() => setModalOpen(false)}>
+            <Button type="button" variant="ghost" className="flex-1" onClick={closeModal}>
               Cancel
             </Button>
             <Button type="submit" className="flex-1" loading={createMutation.isPending}>

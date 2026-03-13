@@ -1,14 +1,53 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiGet, apiPost } from '@/lib/api-client';
+import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api-client';
 import type { PaginatedResult } from './donations.api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+export type SevaFrequency = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'FESTIVAL' | 'ON_DEMAND';
+
+export interface PricingTier {
+  name: string;
+  price: number;
+  description?: string;
+}
+
 export interface SevaType {
   id: string;
   name: string;
+  nameHi?: string;
+  description?: string;
+  durationMinutes: number;
+  frequency: SevaFrequency;
   isActive: boolean;
-  pricingTiers: Array<{ name: string; price: number; description?: string }>;
+  isOnlineBookable: boolean;
+  pricingTiers: PricingTier[];
+  maxBookingsPerSlot: number;
+  advanceBookingDays: number;
+  requiresSankalpa: boolean;
+  availableDays: number[];
+  availableTimeSlots: Array<{ time: string; label?: string; maxBookings?: number }>;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export interface CreateSevaTypeDto {
+  name: string;
+  nameHi?: string;
+  description?: string;
+  durationMinutes?: number;
+  frequency: SevaFrequency;
+  pricingTiers?: PricingTier[];
+  maxBookingsPerSlot?: number;
+  advanceBookingDays?: number;
+  requiresSankalpa?: boolean;
+  isOnlineBookable?: boolean;
+  availableDays?: number[];
+  sortOrder?: number;
+}
+
+export interface UpdateSevaTypeDto extends Partial<CreateSevaTypeDto> {
+  isActive?: boolean;
 }
 
 export interface SevaBooking {
@@ -41,6 +80,7 @@ export interface CreateSevaBookingDto {
   sevaTypeId: string;
   devoteeName: string;
   devoteePhone?: string;
+  devoteeId?: string;
   sevaDate: string;
   timeSlot: string;
   tierName: string;
@@ -77,6 +117,15 @@ export function useSevaTypes() {
   });
 }
 
+/** Admin variant — includes inactive types. staleTime: 0 so settings always re-fetches. */
+export function useSevaTypesAdmin() {
+  return useQuery({
+    queryKey: [...sevaKeys.types, 'admin'] as const,
+    queryFn: () => apiGet<SevaType[]>('/sevas/types', { includeInactive: 'true' }),
+    staleTime: 0,
+  });
+}
+
 export function useCreateSevaBooking() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -84,6 +133,37 @@ export function useCreateSevaBooking() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: sevaKeys.all });
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
+export function useCreateSevaType() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: CreateSevaTypeDto) => apiPost<SevaType>('/sevas/types', dto),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: sevaKeys.types });
+    },
+  });
+}
+
+export function useUpdateSevaType() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: UpdateSevaTypeDto }) =>
+      apiPatch<SevaType>(`/sevas/types/${id}`, dto),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: sevaKeys.types });
+    },
+  });
+}
+
+export function useDeleteSevaType() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiDelete(`/sevas/types/${id}`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: sevaKeys.types });
     },
   });
 }
