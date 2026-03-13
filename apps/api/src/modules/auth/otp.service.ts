@@ -1,3 +1,4 @@
+import { randomInt } from 'crypto';
 import {
   Injectable,
   Logger,
@@ -72,7 +73,12 @@ export class OtpService {
 
     const otp = this.generateOtpCode();
     if (process.env.NODE_ENV === 'development') {
-      this.logger.debug(`[DEV ONLY] OTP for ${phone}: ${otp}`);
+      const fs = await import('fs/promises');
+      await fs.writeFile(
+        'otp-dev.txt',
+        `${new Date().toISOString()} | phone=${phone} | otp=${otp}\n`,
+        { flag: 'a' }
+      );
     }
     const otpHash = await bcrypt.hash(otp, BCRYPT_ROUNDS);
     const expiresAt = new Date(Date.now() + OTP_EXPIRY_SECONDS * 1000);
@@ -194,8 +200,7 @@ export class OtpService {
     // Use crypto-quality randomness. Math.random() is NOT acceptable for OTPs.
     const min = Math.pow(10, OTP_LENGTH - 1);
     const max = Math.pow(10, OTP_LENGTH) - 1;
-    // randomInt is available in Node 14.10+ and is cryptographically secure
-    const { randomInt } = require('crypto') as typeof import('crypto');
+    // randomInt is cryptographically secure (Node built-in, statically imported)
     return String(randomInt(min, max + 1));
   }
 }

@@ -8,6 +8,7 @@ import {
   HttpCode,
   HttpStatus,
   Logger,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { Public } from '../../common/decorators/public.decorator';
@@ -55,7 +56,7 @@ export class WebhooksController {
 
     if (!rawBody) {
       this.logger.error('Raw body not available — ensure app is created with rawBody: true');
-      return { status: 'error' };
+      throw new InternalServerErrorException('Raw body unavailable');
     }
 
     // HMAC verification — throws UnauthorizedException if invalid.

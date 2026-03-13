@@ -33,9 +33,6 @@ export class RolesGuard implements CanActivate {
     const user = request.user;
     if (!user) throw new ForbiddenException('Access denied');
 
-    // SUPER_ADMIN bypasses all role checks
-    if (user.role === UserRole.SUPER_ADMIN) return true;
-
     if (!requiredRoles.includes(user.role)) {
       // Generic message — do not surface the user's role in 403 responses.
       throw new ForbiddenException('Access denied');

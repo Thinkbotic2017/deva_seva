@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 const logger = new Logger('Bootstrap');
@@ -10,6 +11,9 @@ async function bootstrap(): Promise<void> {
     // Capture raw body for Razorpay/Gupshup HMAC webhook verification
     rawBody: true,
   });
+
+  // HTTP security headers — sets CSP, X-Frame-Options, HSTS, X-Content-Type-Options, etc.
+  app.use(helmet());
 
   // Global prefix — all endpoints at /api/v1/...
   app.setGlobalPrefix('api/v1');

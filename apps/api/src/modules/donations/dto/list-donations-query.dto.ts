@@ -7,6 +7,7 @@ import {
   IsDateString,
   IsUUID,
   IsString,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { DonationMode, DonationStatus } from '@devaseva/types';
@@ -48,6 +49,7 @@ export class ListDonationsQueryDto {
   /** Full-text search across donor name, phone, and receipt number. */
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   search?: string;
 
   /** Filter by fiscal year (e.g. '2025-26'). */

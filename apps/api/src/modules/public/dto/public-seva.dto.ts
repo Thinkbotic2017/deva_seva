@@ -90,6 +90,7 @@ export class PublicSevaDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   sankalpaPurpose?: string;
 
   @IsOptional()

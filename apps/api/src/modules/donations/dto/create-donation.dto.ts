@@ -48,6 +48,7 @@ export class CreateDonationDto {
   /** UPI transaction ID, cheque number, DD number, etc. */
   @IsOptional()
   @IsString()
+  @MaxLength(200)
   paymentReference?: string;
 
   @IsDateString()
@@ -76,5 +77,6 @@ export class CreateDonationDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   notes?: string;
 }

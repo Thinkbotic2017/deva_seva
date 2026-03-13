@@ -15,43 +15,13 @@ import { MembershipPlan } from '../../database/entities/membership-plan.entity';
 import { RazorpayService } from '../razorpay/razorpay.service';
 import { TemplePlan, DonationStatus, BillingCycle, UserRole } from '@devaseva/types';
 
-// ─── DTO shapes (kept local — superadmin only) ────────────────────────────────
-
-export interface CreatePlanDto {
-  name: string;
-  billingCycle: BillingCycle;
-  price: number;
-  description?: string;
-  features?: string[];
-  isActive?: boolean;
-  sortOrder?: number;
-}
-
-export interface UpdatePlanDto {
-  name?: string;
-  billingCycle?: BillingCycle;
-  price?: number;
-  description?: string;
-  features?: string[];
-  isActive?: boolean;
-  sortOrder?: number;
-}
-
-export interface ChargePlanDto {
-  planId: string;
-  billingCycle: string;
-}
-
-export interface ExtendPlanDto {
-  months: number;
-  reason: string;
-}
-
-export interface InviteTempleAdminDto {
-  phone: string;
-  fullName: string;
-  email?: string;
-}
+export {
+  CreatePlanDto,
+  UpdatePlanDto,
+  ChargePlanDto,
+  ExtendPlanDto,
+  InviteTempleAdminDto,
+} from './dto/superadmin.dto';
 
 // ─── Result types ─────────────────────────────────────────────────────────────
 

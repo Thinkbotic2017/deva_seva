@@ -117,6 +117,7 @@ export class CreateSevaBookingDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   sankalpaPurpose?: string;
 
   /** Additional family members to include in the sankalpa. */

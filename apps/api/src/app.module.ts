@@ -4,6 +4,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { BullModule } from '@nestjs/bull';
 import { APP_INTERCEPTOR, APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { Reflector } from '@nestjs/core';
 
 import {
@@ -47,6 +48,10 @@ import { PublicModule } from './modules/public/public.module';
 
     // Task scheduler (cron jobs)
     ScheduleModule.forRoot(),
+
+    // Global rate limiting — 100 requests per 60 seconds per IP by default.
+    // Override per-route with @Throttle({ default: { limit: N, ttl: Ms } }).
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
 
     // Redis — global, used by queues and ReceiptNumberUtil
     // Uses ConfigService (not process.env directly) so missing REDIS_URL
@@ -96,6 +101,8 @@ import { PublicModule } from './modules/public/public.module';
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
     // Global JWT guard — all routes protected unless @Public()
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    // Global throttle guard — enforces ThrottlerModule limits on every route
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule implements NestModule {
