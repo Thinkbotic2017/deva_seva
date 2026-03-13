@@ -1,3 +1,4 @@
+import * as Joi from 'joi';
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -44,6 +45,18 @@ import { PublicModule } from './modules/public/public.module';
       isGlobal: true,
       load: [appConfig, databaseConfig, jwtConfig, redisConfig, otpConfig, financeConfig],
       envFilePath: ['.env', '.env.local'],
+      validationSchema: Joi.object({
+        DATABASE_URL:            Joi.string().required(),
+        REDIS_URL:               Joi.string().required(),
+        JWT_PRIVATE_KEY:         Joi.string().required(),
+        JWT_PUBLIC_KEY:          Joi.string().required(),
+        ENCRYPTION_KEY:          Joi.string().required(),
+        RAZORPAY_WEBHOOK_SECRET: Joi.string().required(),
+        ADMIN_URL:               Joi.string().default('http://localhost:5173'),
+        WEB_URL:                 Joi.string().default('http://localhost:5173'),
+        NODE_ENV:                Joi.string().valid('development', 'production', 'test').default('development'),
+      }),
+      validationOptions: { allowUnknown: true, abortEarly: false },
     }),
 
     // Task scheduler (cron jobs)

@@ -15,7 +15,6 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '@devaseva/types';
 import { MembershipPlan } from '../../database/entities/membership-plan.entity';
-import { User } from '../../database/entities/user.entity';
 import {
   SuperAdminService,
   TempleSummary,
@@ -26,6 +25,7 @@ import {
   ExtendPlanDto,
   ChargeResult,
   InviteTempleAdminDto,
+  InviteAdminResult,
 } from './superadmin.service';
 
 /**
@@ -89,7 +89,7 @@ export class SuperAdminController {
   async inviteTempleAdmin(
     @Param('id') templeId: string,
     @Body() dto: InviteTempleAdminDto,
-  ): Promise<User> {
+  ): Promise<InviteAdminResult> {
     return this.superAdminService.inviteTempleAdmin(templeId, dto);
   }
 

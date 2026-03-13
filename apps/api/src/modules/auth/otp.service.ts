@@ -69,7 +69,7 @@ export class OtpService {
     purpose: OtpPurpose = OtpPurpose.LOGIN,
     ipAddress?: string,
   ): Promise<OtpGenerateResult> {
-    await this.enforceRateLimit(phone);
+    await this.enforceRateLimit(phone, ipAddress);
 
     const otp = this.generateOtpCode();
     if (process.env.NODE_ENV === 'development') {
@@ -170,8 +170,11 @@ export class OtpService {
 
   // ─── Private helpers ──────────────────────────────────────────────────────
 
-  /** Throws TooManyRequestsException if the phone has hit the hourly request cap. */
-  private async enforceRateLimit(phone: string): Promise<void> {
+  /**
+   * Throws TooManyRequestsException if the phone or originating IP has hit the
+   * hourly request cap. Per-phone: 5 req/hr. Per-IP: 20 req/hr.
+   */
+  private async enforceRateLimit(phone: string, ipAddress?: string): Promise<void> {
     const key = REDIS_KEY_OTP_REQUEST(phone);
     const current = await this.redis.get(key);
     const count = current ? parseInt(current, 10) : 0;
@@ -182,6 +185,21 @@ export class OtpService {
         'Too many OTP requests. Please wait before requesting another.',
         HttpStatus.TOO_MANY_REQUESTS,
       );
+    }
+
+    if (ipAddress) {
+      const ipKey = `otp_ip:${ipAddress}`;
+      const ipCount = await this.redis.incr(ipKey);
+      if (ipCount === 1) {
+        await this.redis.expire(ipKey, 3600); // 1-hour window
+      }
+      if (ipCount > 20) {
+        this.logger.warn(`OTP IP rate limit exceeded for IP ${ipAddress}`);
+        throw new HttpException(
+          'Too many OTP requests from this IP. Please try again later.',
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
     }
   }
 

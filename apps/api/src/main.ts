@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import helmet from 'helmet';
+import * as express from 'express';
 import { AppModule } from './app.module';
 
 const logger = new Logger('Bootstrap');
@@ -14,6 +15,13 @@ async function bootstrap(): Promise<void> {
 
   // HTTP security headers — sets CSP, X-Frame-Options, HSTS, X-Content-Type-Options, etc.
   app.use(helmet());
+
+  // Explicit body size limit — Express default (100kb) is unnecessarily large.
+  // Webhooks are excluded: they use the rawBody buffer captured by NestFactory.
+  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (req.path.includes('/webhooks/')) return next();
+    express.json({ limit: '50kb' })(req, res, next);
+  });
 
   // Global prefix — all endpoints at /api/v1/...
   app.setGlobalPrefix('api/v1');

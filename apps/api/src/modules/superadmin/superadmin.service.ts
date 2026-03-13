@@ -55,6 +55,17 @@ export interface SystemStats {
 }
 
 /** Result of creating a Razorpay payment link for a temple. */
+/** Safe response for inviteTempleAdmin — never exposes the full User entity. */
+export interface InviteAdminResult {
+  userId: string;
+  phone: string;
+  fullName: string;
+  role: string;
+  /** The raw one-time invite token — log or surface to the caller, then discard. */
+  inviteToken: string;
+  message: string;
+}
+
 export interface ChargeResult {
   paymentLinkUrl: string;
   amount: number;
@@ -375,7 +386,7 @@ export class SuperAdminService {
    * @param templeId  The temple to invite the admin to.
    * @param dto       Admin contact details.
    */
-  async inviteTempleAdmin(templeId: string, dto: InviteTempleAdminDto): Promise<User> {
+  async inviteTempleAdmin(templeId: string, dto: InviteTempleAdminDto): Promise<InviteAdminResult> {
     const temple = await this.templeRepo.findOne({ where: { id: templeId } });
     if (!temple) throw new NotFoundException(`Temple ${templeId} not found`);
 
@@ -400,7 +411,7 @@ export class SuperAdminService {
     }
 
     // 48-character URL-safe invite token (192 bits of entropy).
-    const inviteToken = randomBytes(36).toString('base64url');
+    const rawInviteToken = randomBytes(36).toString('base64url');
 
     const user = this.userRepo.create({
       templeId,
@@ -409,14 +420,21 @@ export class SuperAdminService {
       email: dto.email,
       role: UserRole.ADMIN,
       isActive: true,
-      inviteToken,
+      inviteToken: rawInviteToken,
     });
 
     const saved = await this.userRepo.save(user);
     this.logger.log(
       `Temple ADMIN invited for temple ${templeId} (${temple.slug}): phone=${dto.phone}`,
     );
-    return saved;
+    return {
+      userId: saved.id,
+      phone: saved.phone,
+      fullName: saved.fullName,
+      role: saved.role,
+      inviteToken: rawInviteToken,
+      message: 'Admin invited successfully',
+    };
   }
 
   // ─── Private helpers ───────────────────────────────────────────────────────

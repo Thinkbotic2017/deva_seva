@@ -28,6 +28,7 @@ import { ListDonationsQueryDto } from './dto/list-donations-query.dto';
 import { InitiateOnlineDonationDto } from './dto/initiate-online-donation.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { Donation } from '../../database/entities/donation.entity';
+import { MatchesPipe } from '../../common/pipes/matches.pipe';
 import { DonationCategory } from '../../database/entities/donation-category.entity';
 
 /**
@@ -92,7 +93,7 @@ export class DonationsController {
   @Get('by-order/:orderId')
   @Public()
   async findByOrderId(
-    @Param('orderId') orderId: string,
+    @Param('orderId', new MatchesPipe(/^order_[A-Za-z0-9]{14,}$/)) orderId: string,
   ): Promise<{ status: DonationStatus; donationId: string } | null> {
     const donation = await this.donationsService.findByRazorpayOrderId(orderId);
     if (!donation) return null;
@@ -110,7 +111,8 @@ export class DonationsController {
     @CurrentUser() user: JwtPayload,
     @Query('includeInactive') includeInactive?: string,
   ): Promise<DonationCategory[]> {
-    if (includeInactive === 'true') {
+    const allowedRoles: UserRole[] = [UserRole.ADMIN, UserRole.ACCOUNTANT];
+    if (includeInactive === 'true' && allowedRoles.includes(user.role as UserRole)) {
       return this.donationsService.findAllCategories(user.templeId);
     }
     return this.donationsService.findCategories(user.templeId);
