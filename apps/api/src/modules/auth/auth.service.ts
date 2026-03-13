@@ -27,7 +27,6 @@ export interface AuthUser {
   userId: string;
   templeId: string;
   role: UserRole;
-  phone: string;
   fullName: string;
 }
 
@@ -51,17 +50,17 @@ export interface MeResult {
  *
  * Flow:
  *   1. requestOtp   — rate-limit → generate OTP → queue delivery → return sessionId
- *   2. verifyOtp    — verify OTP → find/create user → create session → issue JWT pair
- *   3. refresh      — decode refresh JWT → validate session → issue new access token
- *   4. logout       — revoke single session
+ *   2. verifyOtp    — verify OTP → find user → create session → issue access JWT + opaque refresh token
+ *   3. refresh      — validate opaque token → rotate → issue new access JWT + new opaque token
+ *   4. logout       — parse session ID from raw token → revoke single session
  *   5. logoutAll    — revoke all sessions for user
  *
- * Security rules enforced:
- * - templeId is NEVER read from the request body on any endpoint.
- *   On verifyOtp it comes from the user record.
- *   On refresh it is decoded from the refresh token payload.
- * - Refresh tokens are opaque random strings — the JWT wrapping carries only
- *   the userId so the server can look up and bcrypt.compare the raw token.
+ * Refresh token security model:
+ * - Refresh tokens are OPAQUE random strings ({sessionId}.{secret}), NOT JWTs.
+ * - Only the bcrypt hash is stored in the database — the raw token is returned once.
+ * - On each /refresh, the old session is revoked and a new one is issued (rotation).
+ * - userId / templeId are NEVER read from the request body — always from the access
+ *   token payload (JWT) or derived from the validated session record.
  */
 @Injectable()
 export class AuthService {
@@ -81,27 +80,20 @@ export class AuthService {
   /**
    * Step 1 — Request an OTP.
    * Enforces rate limit, generates OTP, returns sessionId and delivery metadata.
-   * Caller (controller) queues SMS/WhatsApp delivery with the plain OTP.
+   * The caller (controller) queues SMS/WhatsApp delivery with the plain OTP.
    */
   async requestOtp(
     dto: RequestOtpDto,
     ipAddress?: string,
   ): Promise<{ sessionId: string; expiresAt: Date; otp: string }> {
-    const result = await this.otpService.generate(
-      dto.phone,
-      OtpPurpose.LOGIN,
-      ipAddress,
-    );
-
-    // NOTE: otp is returned here so the controller can queue WhatsApp/SMS delivery.
-    // The controller must NOT log or persist the otp value.
-    return result;
+    return this.otpService.generate(dto.phone, OtpPurpose.LOGIN, ipAddress);
   }
 
   /**
    * Step 2 — Verify OTP and issue token pair.
-   * On first login the user record is created automatically.
-   * User must belong to an active temple — standalone SUPER_ADMINs are not supported.
+   * Verifies the OTP, finds the user, creates a session, and returns:
+   * - accessToken: short-lived RS256 JWT (15 min)
+   * - refreshToken: opaque random string ({sessionId}.{secret}) — NOT a JWT
    */
   async verifyOtp(
     dto: VerifyOtpDto,
@@ -109,8 +101,6 @@ export class AuthService {
   ): Promise<TokenPair & { user: AuthUser }> {
     const { phone } = await this.otpService.verify(dto.sessionId, dto.otp);
 
-    // Find an active user for this phone across all temples.
-    // SUPER_ADMIN accounts span temples and are looked up differently — handled in Phase 12.
     const user = await this.userRepo.findOne({
       where: { phone, isActive: true },
       relations: [],
@@ -123,7 +113,6 @@ export class AuthService {
       );
     }
 
-    // Update last login timestamp
     await this.userRepo.update(user.id, { lastLoginAt: new Date() });
 
     const tokens = await this.issueTokenPair(user, dto.deviceInfo, ipAddress);
@@ -134,49 +123,51 @@ export class AuthService {
         userId: user.id,
         templeId: user.templeId,
         role: user.role,
-        phone: user.phone,
         fullName: user.fullName,
       },
     };
   }
 
   /**
-   * Step 3 — Refresh access token.
-   * Decodes the refresh token (JWT) to extract userId and templeId.
-   * NEVER reads userId or templeId from the request body.
-   * Validates the session exists, is not revoked, and the token hash matches.
-   * Issues a new access token (does NOT rotate the refresh token).
+   * Step 3 — Refresh access token with rotation.
+   *
+   * Validates the opaque refresh token via bcrypt comparison (O(1) — session ID
+   * is embedded in the token prefix). Revokes the old session and issues a new
+   * session + new opaque refresh token (rotation). Returns a new access JWT.
+   *
+   * userId/templeId are derived from the validated session record and the user DB
+   * row — NEVER from the request body.
    */
-  async refresh(dto: RefreshDto): Promise<{ accessToken: string; expiresIn: number }> {
-    // Decode the refresh token to get userId — not from request body
-    let payload: JwtPayload;
-    try {
-      const publicKey = this.configService
-        .getOrThrow<string>('JWT_PUBLIC_KEY')
-        .replace(/\\n/g, '\n');
-      payload = this.jwtService.verify<JwtPayload>(dto.refreshToken, {
-        algorithms: ['RS256'],
-        publicKey,
-      });
-    } catch {
-      throw new UnauthorizedException('Invalid or expired refresh token');
+  async refresh(dto: RefreshDto): Promise<TokenPair> {
+    // Validate the opaque token — throws UnauthorizedException if invalid/expired
+    const session = await this.sessionService.validateRefreshToken(dto.refreshToken);
+
+    // Load the user so we can build the access token payload and issue a new session
+    const user = await this.userRepo.findOne({
+      where: { id: session.userId, isActive: true },
+    });
+    if (!user) {
+      throw new UnauthorizedException('User account not found or deactivated');
     }
 
-    // Validate the session — bcrypt.compare against stored hash
-    await this.sessionService.validateRefreshToken(payload.sub, dto.refreshToken);
+    // Rotate: revoke the consumed session before issuing a new one
+    await this.sessionService.revoke(session.id, session.userId);
 
-    // Issue new short-lived access token only
-    const accessToken = this.signAccessToken(payload);
-    const expiresIn = this.configService.get<number>('JWT_ACCESS_EXPIRY', 900);
-
-    return { accessToken, expiresIn };
+    // Issue new access token + new opaque refresh token (new session)
+    return this.issueTokenPair(user);
   }
 
   /**
-   * Logout — revoke a single session.
-   * Verifies the session belongs to the calling user before revoking.
+   * Logout — revoke a single session identified by the raw refresh token.
+   * Parses the session ID from the token prefix; ownership is verified in
+   * SessionService.revoke() by matching userId.
    */
-  async logout(sessionId: string, userId: string): Promise<void> {
+  async logout(rawToken: string, userId: string): Promise<void> {
+    const dotIndex = rawToken.indexOf('.');
+    if (dotIndex === -1) {
+      throw new UnauthorizedException('Invalid refresh token format');
+    }
+    const sessionId = rawToken.substring(0, dotIndex);
     await this.sessionService.revoke(sessionId, userId);
   }
 
@@ -226,7 +217,8 @@ export class AuthService {
   // ─── Private helpers ──────────────────────────────────────────────────────
 
   /**
-   * Issues a JWT access+refresh token pair and creates a session record.
+   * Creates a session and returns the access JWT + opaque refresh token.
+   * The refresh token is the raw random string from SessionService — NOT a JWT.
    */
   private async issueTokenPair(
     user: User,
@@ -246,18 +238,14 @@ export class AuthService {
       2592000,
     );
 
-    // Refresh token: a signed JWT that carries only sub (userId).
-    // The payload is minimal — the raw token string is what gets hashed and stored.
-    const privateKey = this.configService
-      .getOrThrow<string>('JWT_PRIVATE_KEY')
-      .replace(/\\n/g, '\n');
-
-    const refreshToken = this.jwtService.sign(
-      { sub: user.id, templeId: user.templeId, role: user.role, phone: user.phone },
-      { privateKey, algorithm: 'RS256', expiresIn: refreshExpirySeconds },
+    // The opaque refresh token is the raw random string returned by SessionService.
+    // We do NOT sign a JWT for the refresh token — that was the old broken approach.
+    const { refreshToken } = await this.sessionService.create(
+      user,
+      refreshExpirySeconds,
+      deviceInfo,
+      ipAddress,
     );
-
-    await this.sessionService.create(user, refreshExpirySeconds, deviceInfo, ipAddress);
 
     const expiresIn = this.configService.get<number>('JWT_ACCESS_EXPIRY', 900);
     return { accessToken, refreshToken, expiresIn };

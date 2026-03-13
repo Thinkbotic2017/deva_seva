@@ -7,6 +7,9 @@ import {
   getAccessToken,
   setAccessToken,
   clearAccessToken,
+  getRefreshToken,
+  setRefreshToken,
+  clearRefreshToken,
 } from '@/store/auth.store';
 import { queryClient } from './query-client';
 
@@ -29,7 +32,7 @@ export interface ApiError {
 export const apiClient: AxiosInstance = axios.create({
   baseURL: '/api/v1',
   headers: { 'Content-Type': 'application/json' },
-  withCredentials: true, // send httpOnly refresh-token cookie on every request
+  withCredentials: false,
 });
 
 // ─── Request interceptor — attach Bearer token ────────────────────────────────
@@ -101,24 +104,27 @@ apiClient.interceptors.response.use(
     originalRequest._retry = true;
 
     try {
-      // POST /auth/refresh — the httpOnly cookie carries the refresh token;
-      // no body needed. Server returns a new access token.
-      const { data } = await apiClient.post<
-        ApiResponse<{ accessToken: string; expiresIn: number }>
-      >('/auth/refresh', {});
+      const storedRefreshToken = getRefreshToken();
+      if (!storedRefreshToken) throw new Error('No refresh token');
 
-      const newToken = data.data.accessToken;
-      setAccessToken(newToken);
-      drainQueue(newToken);
+      const { data } = await apiClient.post<
+        ApiResponse<{ accessToken: string; refreshToken: string; expiresIn: number }>
+      >('/auth/refresh', { refreshToken: storedRefreshToken });
+
+      const newAccessToken = data.data.accessToken;
+      setAccessToken(newAccessToken);
+      setRefreshToken(data.data.refreshToken);
+      drainQueue(newAccessToken);
 
       // Retry the original request with the new token
       if (originalRequest.headers) {
-        originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+        originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
       }
       return apiClient(originalRequest);
     } catch (refreshErr) {
       drainQueue(null, refreshErr);
       clearAccessToken();
+      clearRefreshToken();
       queryClient.clear();
       window.dispatchEvent(new CustomEvent('auth:logout'));
       return Promise.reject(refreshErr);

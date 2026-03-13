@@ -1,5 +1,10 @@
 import { apiPost } from '@/lib/api-client';
-import { setAccessToken } from '@/store/auth.store';
+import {
+  setAccessToken,
+  setRefreshToken,
+  clearRefreshToken,
+  getRefreshToken,
+} from '@/store/auth.store';
 import type { AuthUser } from '@/store/auth.store';
 
 export interface RequestOtpResult {
@@ -37,17 +42,21 @@ export async function verifyOtp(
     otp,
     deviceInfo,
   });
-  // Store access token in memory — never localStorage
+  // Store access token in memory; refresh token in localStorage
   setAccessToken(result.accessToken);
+  setRefreshToken(result.refreshToken);
   return result;
 }
 
 /**
- * Logout — revokes the current session on the server.
- * The httpOnly cookie will be cleared by the server's Set-Cookie response.
+ * Logout — revokes the current session on the server, then clears local storage.
  */
-export async function logout(sessionId: string): Promise<void> {
-  await apiPost('/auth/logout', { sessionId });
+export async function logout(): Promise<void> {
+  const refreshToken = getRefreshToken();
+  if (refreshToken) {
+    await apiPost('/auth/logout', { refreshToken });
+  }
+  clearRefreshToken();
 }
 
 /** Fetches the authenticated user's profile. */

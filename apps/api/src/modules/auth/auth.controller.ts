@@ -62,7 +62,7 @@ export class AuthController {
     accessToken: string;
     refreshToken: string;
     expiresIn: number;
-    user: { userId: string; templeId: string; role: string; fullName: string };
+    user: { userId: string; templeId: string; role: string; fullName: string; };
   }> {
     const ipAddress = req.ip;
     return this.authService.verifyOtp(dto, ipAddress);
@@ -78,7 +78,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async refresh(
     @Body() dto: RefreshDto,
-  ): Promise<{ accessToken: string; expiresIn: number }> {
+  ): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }> {
     return this.authService.refresh(dto);
   }
 
@@ -101,7 +101,7 @@ export class AuthController {
     @Body() dto: LogoutDto,
     @CurrentUser() user: JwtPayload,
   ): Promise<{ success: boolean }> {
-    await this.authService.logout(dto.sessionId, user.sub);
+    await this.authService.logout(dto.refreshToken, user.sub);
     return { success: true };
   }
 

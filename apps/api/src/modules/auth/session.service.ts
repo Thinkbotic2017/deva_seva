@@ -2,30 +2,36 @@ import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { randomBytes } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 import { Session } from '../../database/entities/session.entity';
 import { User } from '../../database/entities/user.entity';
 
 const BCRYPT_ROUNDS = 10;
-/** Refresh token byte length before base64url encoding. */
+/** Byte length of the secret portion of the refresh token (before base64url). */
 const REFRESH_TOKEN_BYTES = 48;
+/** Maximum active sessions per user (oldest is evicted when exceeded). */
+const MAX_SESSIONS_PER_USER = 10;
 
 export interface CreateSessionResult {
   session: Session;
-  /** Plain refresh token — return to client once, then discard. */
+  /** Plain refresh token — return to client once, then discard. Never retrievable again. */
   refreshToken: string;
 }
 
 /**
  * SessionService manages refresh token slots.
- * One user may have multiple active sessions (multiple devices).
+ * One user may have multiple active sessions (multiple devices), capped at 10.
  *
- * Security invariants enforced here:
- * - Raw refresh token is never persisted. Only bcrypt(token, 10) is stored.
- * - Expired sessions are treated as revoked.
- * - validateRefreshToken does a linear scan of non-revoked sessions for the
- *   user and bcrypt.compare against each — safe because a user will rarely
- *   have more than 5 active sessions.
+ * Refresh token format: {sessionId}.{base64url-secret}
+ * - sessionId (UUID) is the lookup key — allows O(1) validation without userId.
+ * - secret (48 random bytes, base64url) is the unforgeable authenticator.
+ * - The full token string is bcrypt-hashed and stored — the raw token is never
+ *   persisted and is only returned once at creation time.
+ *
+ * Security invariants:
+ * - Raw refresh token is never persisted. Only bcrypt(fullToken, 10) is stored.
+ * - Expired and revoked sessions are rejected.
+ * - HMAC mismatch is logged as a security event (possible token theft).
  */
 @Injectable()
 export class SessionService {
@@ -37,9 +43,13 @@ export class SessionService {
   ) {}
 
   /**
-   * Creates a new session (refresh token slot) for a user.
-   * Returns the plain refresh token — pass to client, then discard.
-   * The token is never retrievable again after this call.
+   * Creates a new session for a user and returns the plain refresh token.
+   *
+   * Enforces a per-user session cap of 10 — the oldest session is evicted if
+   * the cap is reached before inserting the new one.
+   *
+   * The session UUID is pre-generated so the full token string
+   * ({sessionId}.{secret}) can be hashed before the DB insert — no 2-step update.
    */
   async create(
     user: User,
@@ -47,11 +57,19 @@ export class SessionService {
     deviceInfo?: string,
     ipAddress?: string,
   ): Promise<CreateSessionResult> {
-    const refreshToken = this.generateRefreshToken();
-    const refreshTokenHash = await bcrypt.hash(refreshToken, BCRYPT_ROUNDS);
+    // Evict oldest session if user is at the cap
+    await this.enforceSessionCap(user.id);
+
+    // Pre-generate the UUID so the full token can be constructed and hashed
+    // before the INSERT — avoids a placeholder hash or a 2-step update.
+    const sessionId = randomUUID();
+    const secret = randomBytes(REFRESH_TOKEN_BYTES).toString('base64url');
+    const rawToken = `${sessionId}.${secret}`;
+    const refreshTokenHash = await bcrypt.hash(rawToken, BCRYPT_ROUNDS);
     const expiresAt = new Date(Date.now() + refreshExpirySeconds * 1000);
 
     const session = this.sessionRepo.create({
+      id: sessionId,
       userId: user.id,
       templeId: user.templeId, // Denormalised — never read from client
       refreshTokenHash,
@@ -62,45 +80,57 @@ export class SessionService {
     });
 
     const saved = await this.sessionRepo.save(session);
-    this.logger.log(`Session created for user ${user.id}`);
+    this.logger.log(`Session ${sessionId} created for user ${user.id}`);
 
-    return { session: saved, refreshToken };
+    return { session: saved, refreshToken: rawToken };
   }
 
   /**
-   * Validates a refresh token against all active sessions for a user.
-   * Returns the matching session or throws UnauthorizedException.
+   * Validates a raw opaque refresh token.
    *
-   * CRITICAL: userId must come from the decoded JWT — never from the request body.
+   * Parses the session UUID prefix for an O(1) DB lookup, then bcrypt-compares
+   * the full token against the stored hash. Does NOT require userId — the session
+   * UUID is the lookup key, and the bcrypt comparison prevents forgery.
+   *
+   * Throws UnauthorizedException on any validation failure (no distinguishing
+   * detail is returned to prevent oracle attacks).
    */
-  async validateRefreshToken(
-    userId: string,
-    refreshToken: string,
-  ): Promise<Session> {
-    const activeSessions = await this.sessionRepo.find({
+  async validateRefreshToken(rawToken: string): Promise<Session> {
+    const dotIndex = rawToken.indexOf('.');
+    if (dotIndex === -1) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+    const sessionId = rawToken.substring(0, dotIndex);
+
+    const session = await this.sessionRepo.findOne({
       where: {
-        userId,
+        id: sessionId,
         isRevoked: false,
         expiresAt: MoreThan(new Date()),
       },
     });
 
-    for (const session of activeSessions) {
-      const isMatch = await bcrypt.compare(refreshToken, session.refreshTokenHash);
-      if (isMatch) {
-        // Touch last_used_at for audit purposes
-        await this.sessionRepo.update(session.id, { lastUsedAt: new Date() });
-        return session;
-      }
+    if (!session) {
+      this.logger.warn(`Refresh validation failed — session ${sessionId} not found or expired`);
+      throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
-    this.logger.warn(`Refresh token validation failed for user ${userId}`);
-    throw new UnauthorizedException('Invalid or expired refresh token');
+    const isMatch = await bcrypt.compare(rawToken, session.refreshTokenHash);
+    if (!isMatch) {
+      // HMAC mismatch with a valid session ID is a strong signal of token theft.
+      this.logger.warn(
+        `Refresh token HMAC mismatch for session ${sessionId} (user ${session.userId}) — possible token theft`,
+      );
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    await this.sessionRepo.update(session.id, { lastUsedAt: new Date() });
+    return session;
   }
 
   /**
    * Revokes a single session by ID.
-   * Verifies ownership before revoking to prevent cross-user revocation.
+   * Verifies ownership (userId match) before revoking to prevent cross-user revocation.
    */
   async revoke(sessionId: string, userId: string): Promise<void> {
     const result = await this.sessionRepo.update(
@@ -143,8 +173,29 @@ export class SessionService {
 
   // ─── Private helpers ──────────────────────────────────────────────────────
 
-  /** Generates a cryptographically random refresh token (base64url encoded). */
-  private generateRefreshToken(): string {
-    return randomBytes(REFRESH_TOKEN_BYTES).toString('base64url');
+  /**
+   * Enforces the per-user session cap (MAX_SESSIONS_PER_USER = 10).
+   * Deletes the oldest active session if the user is at the limit.
+   * Called before every session creation.
+   */
+  private async enforceSessionCap(userId: string): Promise<void> {
+    const activeSessions = await this.sessionRepo.find({
+      where: {
+        userId,
+        isRevoked: false,
+        expiresAt: MoreThan(new Date()),
+      },
+      order: { createdAt: 'ASC' }, // oldest first for eviction
+    });
+
+    if (activeSessions.length >= MAX_SESSIONS_PER_USER) {
+      const oldest = activeSessions[0];
+      if (oldest) {
+        await this.sessionRepo.delete(oldest.id);
+        this.logger.log(
+          `Session cap (${MAX_SESSIONS_PER_USER}) reached for user ${userId} — evicted oldest session ${oldest.id}`,
+        );
+      }
+    }
   }
 }
