@@ -17,6 +17,7 @@ import { DonationMode, DonationStatus } from '@devaseva/types';
 @Index(['templeId', 'paymentDate'])
 @Index(['templeId', 'fiscalYear'])
 @Index(['templeId', 'status'])
+@Index(['templeId', 'receiptNumber'], { unique: true, where: '"receipt_number" IS NOT NULL' })
 export class Donation extends TenantBaseEntity {
   /**
    * Auto-generated receipt number (atomic via Redis INCR).
@@ -27,11 +28,13 @@ export class Donation extends TenantBaseEntity {
   receiptNumber?: string;
 
   /** Optional link to an existing devotee record. */
+  @Index()
   @Column({ name: 'devotee_id', type: 'uuid', nullable: true })
   devoteeId?: string;
 
   /** Required — all donations belong to a category. */
-  @Column({ name: 'category_id', type: 'uuid' })
+  @Index()
+  @Column({ name: 'category_id', type: 'uuid', nullable: false })
   categoryId: string;
 
   /** Captured at time of donation for display/receipts — not linked by FK. */
@@ -113,6 +116,7 @@ export class Donation extends TenantBaseEntity {
   receiptSentAt?: Date;
 
   /** Optional routing to a specific fund. */
+  @Index()
   @Column({ name: 'fund_id', type: 'uuid', nullable: true })
   fundId?: string;
 

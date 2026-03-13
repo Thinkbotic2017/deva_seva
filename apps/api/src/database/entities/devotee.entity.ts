@@ -18,6 +18,7 @@ import { Gender, DevoteeTier } from '@devaseva/types';
  */
 @Entity('devotees')
 @Index(['templeId', 'tier'])
+@Index(['templeId', 'phone'])
 export class Devotee extends TenantBaseEntity {
   @Column({ name: 'name', type: 'varchar', length: 200 })
   name: string;

@@ -22,6 +22,7 @@ import { SevaBookingPaymentMode, SevaBookingStatus } from '@devaseva/types';
 @Index(['templeId', 'sevaDate'])
 @Index(['templeId', 'sevaDate', 'timeSlot', 'sevaTypeId']) // Availability queries
 @Index(['templeId', 'status'])
+@Index(['templeId', 'bookingNumber'], { unique: true, where: '"booking_number" IS NOT NULL' })
 export class SevaBooking extends TenantBaseEntity {
   /**
    * Auto-generated booking reference number.
@@ -32,15 +33,17 @@ export class SevaBooking extends TenantBaseEntity {
   bookingNumber?: string;
 
   /** Required — every booking belongs to a seva type. */
-  @Column({ name: 'seva_type_id', type: 'uuid' })
+  @Index()
+  @Column({ name: 'seva_type_id', type: 'uuid', nullable: false })
   sevaTypeId: string;
 
   /** Optional link to an existing devotee profile. */
+  @Index()
   @Column({ name: 'devotee_id', type: 'uuid', nullable: true })
   devoteeId?: string;
 
   /** Captured at booking time for display on day-sheet and confirmation messages. */
-  @Column({ name: 'devotee_name', type: 'varchar', length: 200 })
+  @Column({ name: 'devotee_name', type: 'varchar', length: 200, nullable: false })
   devoteeName: string;
 
   @Column({ name: 'devotee_phone', type: 'varchar', length: 15, nullable: true })
@@ -115,6 +118,7 @@ export class SevaBooking extends TenantBaseEntity {
 
   // ── Assignment & delivery ─────────────────────────────────────────────────
 
+  @Index()
   @Column({ name: 'priest_id', type: 'uuid', nullable: true })
   priestId?: string;
 

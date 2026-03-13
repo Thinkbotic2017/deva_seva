@@ -1,5 +1,6 @@
-import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, Index, ManyToOne, JoinColumn } from 'typeorm';
 import { TenantBaseEntity } from '@devaseva/types';
+import { Fund } from './fund.entity';
 
 @Entity('donation_categories')
 export class DonationCategory extends TenantBaseEntity {
@@ -26,14 +27,15 @@ export class DonationCategory extends TenantBaseEntity {
   color: string;
 
   /** Optional fund this category routes into. */
+  @Index()
   @Column({ name: 'fund_id', type: 'uuid', nullable: true })
   fundId?: string;
 
   /**
-   * Relation to Fund — loaded lazily. Not required; set via fundId column.
-   * Import Fund lazily to avoid circular dependency.
+   * Relation to Fund — not eagerly loaded; use fundId column for reads.
+   * Only join explicitly when the relation data is needed.
    */
-  @ManyToOne('Fund', { nullable: true, onDelete: 'SET NULL', lazy: true })
+  @ManyToOne(() => Fund, { nullable: true, onDelete: 'SET NULL', eager: false })
   @JoinColumn({ name: 'fund_id' })
-  fund?: Promise<unknown>;
+  fund?: Fund;
 }

@@ -44,7 +44,7 @@ export class User extends TenantBaseEntity {
   @Column({ name: 'invited_by', type: 'uuid', nullable: true })
   invitedBy?: string;
 
-  @ManyToOne(() => User, { nullable: true })
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'invited_by' })
   invitedByUser?: User;
 
