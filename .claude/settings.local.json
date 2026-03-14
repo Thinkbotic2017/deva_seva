@@ -33,7 +33,11 @@
       "Bash(find /d/Software/deva_seva/apps/api/src -type f -name \"*.service.ts\" ! -path \"*/__tests__/*\" -exec wc -l {} + | sort -rn | head -10)",
       "Bash(grep -o 'className=\"[^\"]*border border-border-subtle[^\"]*\"' /d/Software/deva_seva/apps/admin/src/pages/*.tsx | head -10)",
       "Bash(wc -l D:/Software/deva_seva/apps/admin/src/pages/SettingsPage.tsx && wc -l D:/Software/deva_seva/apps/admin/src/pages/settings/*.tsx 2>/dev/null)",
-      "Bash(cd D:/Software/deva_seva && grep -n \"export function\\\\|export const\" apps/admin/src/pages/settings/*.tsx)"
+      "Bash(cd D:/Software/deva_seva && grep -n \"export function\\\\|export const\" apps/admin/src/pages/settings/*.tsx)",
+      "Bash(python3:*)",
+      "Bash(python:*)",
+      "Bash(py:*)",
+      "Bash(cd:*)"
     ]
   }
 }

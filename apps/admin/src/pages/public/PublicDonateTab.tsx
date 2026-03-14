@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { LockKeyhole, FileCheck, MessageCircle, CheckCircle } from 'lucide-react';
 import { fmtINR } from '@/lib/format';
 import type { PublicCategory, PublicTemple, InitiateResult, PublicDonatePayload } from '@/api/public.api';
 import { initiateDonation } from '@/api/public.api';
@@ -33,6 +34,8 @@ const inputClass =
 
 const labelClass = 'block text-sm font-medium text-text-secondary mb-1.5';
 
+const quickAmounts = [101, 501, 1001, 2100, 5100, 11000];
+
 export function PublicDonateTab({ temple, categories }: Props) {
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '');
   const [donorName, setDonorName] = useState('');
@@ -42,8 +45,6 @@ export function PublicDonateTab({ temple, categories }: Props) {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-
-  const quickAmounts = [101, 501, 1001, 2100, 5100, 11000];
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -95,18 +96,33 @@ export function PublicDonateTab({ temple, categories }: Props) {
 
   if (isSuccess) {
     return (
-      <div className="max-w-lg mx-auto bg-bg-surface rounded-2xl shadow-modal border border-border-subtle p-6 md:p-8">
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <div className="w-16 h-16 rounded-full bg-success-subtle flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-success-fg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+      <div className="max-w-lg mx-auto bg-bg-surface rounded-2xl shadow-modal border border-border-subtle p-8 md:p-10">
+        <div className="flex flex-col items-center justify-center text-center">
+
+          {/* Animated checkmark */}
+          <div className="relative w-24 h-24 mb-6" aria-hidden="true">
+            <div className="absolute inset-0 rounded-full bg-brand-primary/10 animate-pulse" />
+            <div className="absolute inset-3 rounded-full bg-brand-primary-subtle flex items-center justify-center">
+              <CheckCircle size={32} className="text-brand-primary" strokeWidth={1.75} />
+            </div>
           </div>
-          <h2 className="text-xl font-semibold text-text-primary mb-2">Thank you, {donorName}!</h2>
-          <p className="text-text-secondary text-sm mb-6">Your donation has been received. A receipt will be sent to your WhatsApp shortly.</p>
+
+          <h2 className="text-h2 font-bold text-text-primary mb-2">
+            Thank you, {donorName}!
+          </h2>
+          <p className="text-text-secondary text-sm mb-8 max-w-xs leading-relaxed">
+            Your donation has been received. An 80G receipt will be sent to your WhatsApp shortly.
+          </p>
+
           <button
-            onClick={() => { setIsSuccess(false); setAmount(''); setDonorName(''); setDonorPhone(''); setPan(''); }}
-            className="w-full py-4 rounded-xl bg-brand-primary text-white font-bold text-base hover:bg-brand-primary-hover active:scale-[0.98] transition-all"
+            onClick={() => {
+              setIsSuccess(false);
+              setAmount('');
+              setDonorName('');
+              setDonorPhone('');
+              setPan('');
+            }}
+            className="w-full py-4 rounded-xl bg-brand-primary text-white font-bold text-base hover:bg-brand-primary-hover active:scale-[0.98] transition-all cursor-pointer"
           >
             Make Another Donation
           </button>
@@ -118,35 +134,70 @@ export function PublicDonateTab({ temple, categories }: Props) {
   return (
     <div className="max-w-lg mx-auto bg-bg-surface rounded-2xl shadow-modal border border-border-subtle p-6 md:p-8">
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Category */}
+
+        {/* ── Category ─────────────────────────────────────────────── */}
         <div>
           <label className={labelClass}>Donation Category</label>
-          <select
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            className={inputClass}
-            required
-          >
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}{c.is80gEligible ? ' (80G eligible)' : ''}</option>
-            ))}
-          </select>
+          {categories.length <= 6 ? (
+            /* Horizontal chip row for small sets */
+            <div
+              className="flex gap-2 overflow-x-auto pb-1"
+              style={{ scrollbarWidth: 'none' }}
+              role="group"
+              aria-label="Donation categories"
+            >
+              {categories.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setCategoryId(c.id)}
+                  className={[
+                    'flex-shrink-0 px-3.5 py-2 rounded-full border text-sm font-medium',
+                    'transition-all duration-150 cursor-pointer whitespace-nowrap',
+                    categoryId === c.id
+                      ? 'border-brand-primary bg-brand-primary/10 text-brand-primary'
+                      : 'border-border-default text-text-secondary hover:border-brand-primary/50 hover:text-text-primary',
+                  ].join(' ')}
+                >
+                  {c.name}
+                  {c.is80gEligible && (
+                    <span className="ml-1.5 text-xs text-info font-medium">80G</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          ) : (
+            /* Dropdown for large sets */
+            <select
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              className={inputClass}
+              required
+            >
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}{c.is80gEligible ? ' (80G eligible)' : ''}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
-        {/* Quick amount buttons */}
+        {/* ── Quick-amount chips + custom input ────────────────────── */}
         <div>
           <label className={labelClass}>Amount (₹)</label>
-          <div className="flex flex-wrap gap-2 mb-3">
+          <div className="flex flex-wrap gap-2 mb-3" role="group" aria-label="Quick amount options">
             {quickAmounts.map((q) => (
               <button
                 key={q}
                 type="button"
                 onClick={() => setAmount(String(q))}
-                className={
+                className={[
+                  'px-4 py-2 rounded-full border text-sm font-semibold transition-all duration-150 cursor-pointer',
                   amount === String(q)
-                    ? 'px-4 py-2 rounded-full border-2 border-brand-primary bg-brand-primary/10 text-brand-primary text-sm font-semibold'
-                    : 'px-4 py-2 rounded-full border border-border-default text-text-secondary text-sm font-medium hover:border-brand-primary hover:text-brand-primary transition-all cursor-pointer'
-                }
+                    ? 'border-2 border-brand-primary bg-brand-primary/10 text-brand-primary'
+                    : 'border border-border-default text-text-secondary hover:border-brand-primary/50 hover:text-brand-primary',
+                ].join(' ')}
               >
                 ₹{fmtINR(q)}
               </button>
@@ -164,7 +215,7 @@ export function PublicDonateTab({ temple, categories }: Props) {
           />
         </div>
 
-        {/* Donor name */}
+        {/* ── Donor name ───────────────────────────────────────────── */}
         <div>
           <label className={labelClass}>Your Name</label>
           <input
@@ -178,22 +229,30 @@ export function PublicDonateTab({ temple, categories }: Props) {
           />
         </div>
 
-        {/* Phone */}
+        {/* ── Phone ────────────────────────────────────────────────── */}
         <div>
           <label className={labelClass}>
             WhatsApp Number <span className="text-text-muted font-normal">(for receipt)</span>
           </label>
-          <input
-            type="tel"
-            placeholder="10-digit mobile number"
-            value={donorPhone}
-            onChange={(e) => setDonorPhone(e.target.value)}
-            maxLength={10}
-            className={inputClass}
-          />
+          <div className="relative">
+            <span
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted"
+              aria-hidden="true"
+            >
+              <MessageCircle size={15} />
+            </span>
+            <input
+              type="tel"
+              placeholder="10-digit mobile number"
+              value={donorPhone}
+              onChange={(e) => setDonorPhone(e.target.value)}
+              maxLength={10}
+              className={`${inputClass} pl-10`}
+            />
+          </div>
         </div>
 
-        {/* PAN */}
+        {/* ── PAN ──────────────────────────────────────────────────── */}
         <div>
           <label className={labelClass}>
             PAN Number <span className="text-text-muted font-normal">(optional, for 80G)</span>
@@ -208,16 +267,39 @@ export function PublicDonateTab({ temple, categories }: Props) {
           />
         </div>
 
+        {/* ── Error ────────────────────────────────────────────────── */}
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-danger-subtle border border-danger/20 text-danger-fg text-sm">
+          <div
+            className="p-3 rounded-lg bg-danger-subtle border border-danger/20 text-danger text-sm"
+            role="alert"
+          >
             {error}
           </div>
         )}
 
+        {/* ── Trust row ────────────────────────────────────────────── */}
+        <div className="flex items-center justify-center gap-4 text-xs text-text-muted flex-wrap">
+          <span className="flex items-center gap-1">
+            <LockKeyhole size={11} aria-hidden="true" />
+            Secure
+          </span>
+          <span aria-hidden="true">·</span>
+          <span className="flex items-center gap-1">
+            <FileCheck size={11} aria-hidden="true" />
+            80G Receipt
+          </span>
+          <span aria-hidden="true">·</span>
+          <span className="flex items-center gap-1">
+            <MessageCircle size={11} aria-hidden="true" />
+            WhatsApp
+          </span>
+        </div>
+
+        {/* ── Submit ───────────────────────────────────────────────── */}
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full py-4 rounded-xl bg-brand-primary text-white font-bold text-base hover:bg-brand-primary-hover active:scale-[0.98] transition-all disabled:opacity-50"
+          className="w-full py-4 rounded-xl bg-brand-primary text-white font-bold text-base hover:bg-brand-primary-hover active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer"
         >
           {isLoading ? 'Processing…' : `Donate ₹${amount || '—'}`}
         </button>

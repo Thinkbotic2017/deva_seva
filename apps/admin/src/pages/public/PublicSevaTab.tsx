@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { LockKeyhole, FileCheck, MessageCircle, CheckCircle } from 'lucide-react';
 import { fmtINR } from '@/lib/format';
 import type { PublicSevaType, PublicTemple, InitiateResult, PublicSevaPayload, PricingTier } from '@/api/public.api';
 import { initiateSeva } from '@/api/public.api';
@@ -131,20 +132,33 @@ export function PublicSevaTab({ temple, sevaTypes }: Props) {
 
   if (isSuccess) {
     return (
-      <div className="max-w-lg mx-auto bg-bg-surface rounded-2xl shadow-modal border border-border-subtle p-6 md:p-8">
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <div className="w-16 h-16 rounded-full bg-success-subtle flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-success-fg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+      <div className="max-w-lg mx-auto bg-bg-surface rounded-2xl shadow-modal border border-border-subtle p-8 md:p-10">
+        <div className="flex flex-col items-center justify-center text-center">
+
+          {/* Animated checkmark */}
+          <div className="relative w-24 h-24 mb-6" aria-hidden="true">
+            <div className="absolute inset-0 rounded-full bg-brand-primary/10 animate-pulse" />
+            <div className="absolute inset-3 rounded-full bg-brand-primary-subtle flex items-center justify-center">
+              <CheckCircle size={32} className="text-brand-primary" strokeWidth={1.75} />
+            </div>
           </div>
-          <h2 className="text-xl font-semibold text-text-primary mb-2">Booking Confirmed!</h2>
-          <p className="text-text-secondary text-sm mb-6">
-            Your seva has been booked for {sevaDate}. A confirmation will be sent to your WhatsApp shortly.
+
+          <h2 className="text-h2 font-bold text-text-primary mb-2">Booking Confirmed!</h2>
+          <p className="text-text-secondary text-sm mb-8 max-w-xs leading-relaxed">
+            Your seva has been booked for{' '}
+            <span className="font-medium text-text-primary">{sevaDate}</span>.
+            A confirmation will be sent to your WhatsApp shortly.
           </p>
+
           <button
-            onClick={() => { setIsSuccess(false); setDevoteeName(''); setDevoteePhone(''); setSankalpaName(''); setGotra(''); }}
-            className="w-full py-4 rounded-xl bg-brand-primary text-white font-bold text-base hover:bg-brand-primary-hover active:scale-[0.98] transition-all"
+            onClick={() => {
+              setIsSuccess(false);
+              setDevoteeName('');
+              setDevoteePhone('');
+              setSankalpaName('');
+              setGotra('');
+            }}
+            className="w-full py-4 rounded-xl bg-brand-primary text-white font-bold text-base hover:bg-brand-primary-hover active:scale-[0.98] transition-all cursor-pointer"
           >
             Book Another Seva
           </button>
@@ -156,7 +170,8 @@ export function PublicSevaTab({ temple, sevaTypes }: Props) {
   return (
     <div className="max-w-lg mx-auto bg-bg-surface rounded-2xl shadow-modal border border-border-subtle p-6 md:p-8">
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Seva type */}
+
+        {/* ── Seva type ────────────────────────────────────────────── */}
         <div>
           <label className={labelClass}>Seva Type</label>
           <select
@@ -166,7 +181,9 @@ export function PublicSevaTab({ temple, sevaTypes }: Props) {
             required
           >
             {sevaTypes.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}{s.nameHi ? ` (${s.nameHi})` : ''}</option>
+              <option key={s.id} value={s.id}>
+                {s.name}{s.nameHi ? ` (${s.nameHi})` : ''}
+              </option>
             ))}
           </select>
           {currentSeva?.description && (
@@ -174,7 +191,7 @@ export function PublicSevaTab({ temple, sevaTypes }: Props) {
           )}
         </div>
 
-        {/* Pricing tier */}
+        {/* ── Pricing tier cards ───────────────────────────────────── */}
         {currentSeva && currentSeva.pricingTiers.length > 0 && (
           <div>
             <label className={labelClass}>Select Package</label>
@@ -184,22 +201,26 @@ export function PublicSevaTab({ temple, sevaTypes }: Props) {
                   key={tier.name}
                   type="button"
                   onClick={() => setSelectedTier(tier)}
-                  className={`p-3 rounded-lg border text-left transition-all ${
+                  className={[
+                    'p-4 rounded-lg border text-left transition-all duration-150 cursor-pointer',
+                    'border-l-4',
                     selectedTier?.name === tier.name
-                      ? 'border-brand-primary bg-brand-primary/10 text-brand-primary'
-                      : 'border-border-default text-text-primary hover:border-brand-primary/50 hover:bg-bg-surface-2'
-                  }`}
+                      ? 'border-brand-primary border-l-brand-primary bg-brand-primary/8 text-brand-primary'
+                      : 'border-border-default border-l-border-default text-text-primary hover:border-brand-primary/40 hover:bg-bg-surface-2',
+                  ].join(' ')}
                 >
-                  <div className="font-medium text-sm">{tier.name}</div>
-                  <div className="text-brand-primary font-semibold text-sm">₹{fmtINR(tier.price)}</div>
-                  {tier.description && <div className="text-xs text-text-muted mt-0.5">{tier.description}</div>}
+                  <div className="font-semibold text-sm mb-0.5">{tier.name}</div>
+                  <div className="text-brand-primary font-bold text-base">₹{fmtINR(tier.price)}</div>
+                  {tier.description && (
+                    <div className="text-xs text-text-muted mt-1 leading-snug">{tier.description}</div>
+                  )}
                 </button>
               ))}
             </div>
           </div>
         )}
 
-        {/* Date */}
+        {/* ── Date ─────────────────────────────────────────────────── */}
         <div>
           <label className={labelClass}>Seva Date</label>
           <input
@@ -212,21 +233,23 @@ export function PublicSevaTab({ temple, sevaTypes }: Props) {
           />
         </div>
 
-        {/* Time slot */}
+        {/* ── Time slot pills ──────────────────────────────────────── */}
         {currentSeva && currentSeva.availableTimeSlots.length > 0 && (
           <div>
             <label className={labelClass}>Time Slot</label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Time slot options">
               {currentSeva.availableTimeSlots.map((slot) => (
                 <button
                   key={slot.time}
                   type="button"
                   onClick={() => setTimeSlot(slot.time)}
-                  className={
+                  className={[
+                    'px-4 py-2 rounded-full border text-sm font-semibold',
+                    'transition-all duration-150 cursor-pointer',
                     timeSlot === slot.time
-                      ? 'px-4 py-2 rounded-full border-2 border-brand-primary bg-brand-primary/10 text-brand-primary text-sm font-semibold'
-                      : 'px-4 py-2 rounded-full border border-border-default text-text-secondary text-sm font-medium hover:border-brand-primary hover:text-brand-primary transition-all cursor-pointer'
-                  }
+                      ? 'border-2 border-brand-primary bg-brand-primary/10 text-brand-primary'
+                      : 'border border-border-default text-text-secondary hover:border-brand-primary/50 hover:text-brand-primary',
+                  ].join(' ')}
                 >
                   {slot.label} ({slot.time})
                 </button>
@@ -235,7 +258,7 @@ export function PublicSevaTab({ temple, sevaTypes }: Props) {
           </div>
         )}
 
-        {/* Devotee name */}
+        {/* ── Devotee name ─────────────────────────────────────────── */}
         <div>
           <label className={labelClass}>Devotee Name</label>
           <input
@@ -249,22 +272,30 @@ export function PublicSevaTab({ temple, sevaTypes }: Props) {
           />
         </div>
 
-        {/* Phone */}
+        {/* ── Phone ────────────────────────────────────────────────── */}
         <div>
           <label className={labelClass}>
             WhatsApp Number <span className="text-text-muted font-normal">(for confirmation)</span>
           </label>
-          <input
-            type="tel"
-            placeholder="10-digit mobile number"
-            value={devoteePhone}
-            onChange={(e) => setDevoteePhone(e.target.value)}
-            maxLength={10}
-            className={inputClass}
-          />
+          <div className="relative">
+            <span
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted"
+              aria-hidden="true"
+            >
+              <MessageCircle size={15} />
+            </span>
+            <input
+              type="tel"
+              placeholder="10-digit mobile number"
+              value={devoteePhone}
+              onChange={(e) => setDevoteePhone(e.target.value)}
+              maxLength={10}
+              className={`${inputClass} pl-10`}
+            />
+          </div>
         </div>
 
-        {/* Sankalpa — only if required */}
+        {/* ── Sankalpa — only if required ──────────────────────────── */}
         {currentSeva?.requiresSankalpa && (
           <>
             <div>
@@ -292,16 +323,39 @@ export function PublicSevaTab({ temple, sevaTypes }: Props) {
           </>
         )}
 
+        {/* ── Error ────────────────────────────────────────────────── */}
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-danger-subtle border border-danger/20 text-danger-fg text-sm">
+          <div
+            className="p-3 rounded-lg bg-danger-subtle border border-danger/20 text-danger text-sm"
+            role="alert"
+          >
             {error}
           </div>
         )}
 
+        {/* ── Trust row ────────────────────────────────────────────── */}
+        <div className="flex items-center justify-center gap-4 text-xs text-text-muted flex-wrap">
+          <span className="flex items-center gap-1">
+            <LockKeyhole size={11} aria-hidden="true" />
+            Secure
+          </span>
+          <span aria-hidden="true">·</span>
+          <span className="flex items-center gap-1">
+            <FileCheck size={11} aria-hidden="true" />
+            Instant Confirmation
+          </span>
+          <span aria-hidden="true">·</span>
+          <span className="flex items-center gap-1">
+            <MessageCircle size={11} aria-hidden="true" />
+            WhatsApp
+          </span>
+        </div>
+
+        {/* ── Submit ───────────────────────────────────────────────── */}
         <button
           type="submit"
           disabled={isLoading || !selectedTier}
-          className="w-full py-4 rounded-xl bg-brand-primary text-white font-bold text-base hover:bg-brand-primary-hover active:scale-[0.98] transition-all disabled:opacity-50"
+          className="w-full py-4 rounded-xl bg-brand-primary text-white font-bold text-base hover:bg-brand-primary-hover active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer"
         >
           {isLoading ? 'Processing…' : `Book Seva — ₹${selectedTier ? fmtINR(selectedTier.price) : '—'}`}
         </button>

@@ -22,7 +22,7 @@ export function StatCard({ label, value, sub, icon, iconColor = 'bg-primary/10 t
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className="rounded-lg bg-surface border border-border p-5 flex items-start gap-4"
+      className="rounded-xl bg-bg-surface border border-border-subtle p-5 flex items-start gap-4"
     >
       {icon && (
         <div className={`flex-shrink-0 w-10 h-10 rounded-md flex items-center justify-center text-xl ${iconColor}`}>
@@ -35,7 +35,7 @@ export function StatCard({ label, value, sub, icon, iconColor = 'bg-primary/10 t
           {label}
         </p>
         {loading ? (
-          <div className="mt-1.5 h-7 w-24 animate-pulse rounded bg-surface-2" />
+          <div className="mt-1.5 h-7 w-24 animate-pulse rounded bg-bg-surface-2" />
         ) : (
           <p className="mt-0.5 text-h2 text-text-primary font-bold leading-tight truncate">
             {value}

@@ -33,7 +33,7 @@ const VARIANT_CLASSES: Record<BadgeVariant, string> = {
   warning: 'bg-warning/15 text-warning',
   danger:  'bg-danger/15 text-danger',
   info:    'bg-info/15 text-info',
-  neutral: 'bg-surface-2 text-text-secondary',
+  neutral: 'bg-bg-surface-2 text-text-secondary',
 };
 
 export function Badge({ label, variant }: BadgeProps) {

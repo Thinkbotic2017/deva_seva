@@ -55,6 +55,13 @@ export default {
           fg:      'hsl(var(--info-fg))',
         },
 
+        // Gold accent — spiritual premium moments (public portal, 80G badges)
+        'gold-accent': {
+          DEFAULT: 'hsl(var(--gold-accent))',
+          subtle:  'hsl(var(--gold-accent-subtle))',
+          fg:      'hsl(var(--gold-accent-fg))',
+        },
+
         // ── Static palette tokens (no dark-mode variant) ──────────────────────
         // Use only when you need a fixed colour regardless of theme.
         saffron: {

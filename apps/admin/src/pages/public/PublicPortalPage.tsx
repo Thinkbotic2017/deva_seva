@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
+import { Heart, Sparkles, Shield, FileCheck, MessageCircle } from 'lucide-react';
 import { getPublicPortalData } from '@/api/public.api';
 import type { PublicPortalData } from '@/api/public.api';
 import { PublicDonateTab } from './PublicDonateTab';
@@ -47,7 +48,7 @@ export function PublicPortalPage() {
     return (
       <div className="min-h-screen bg-bg-page flex items-center justify-center p-6">
         <div className="text-center max-w-sm">
-          <p className="text-danger-fg font-medium mb-2">Temple not found</p>
+          <p className="text-danger font-medium mb-2">Temple not found</p>
           <p className="text-text-muted text-sm">{loadError}</p>
         </div>
       </div>
@@ -68,45 +69,80 @@ export function PublicPortalPage() {
   return (
     <div className="min-h-screen bg-bg-page text-text-primary">
 
-      {/* Header */}
-      <div className="text-center pt-8 pb-4 px-4">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-brand-primary text-white font-bold text-lg mb-3">
-          {temple.name.charAt(0)}
+      {/* ── Hero header ──────────────────────────────────────────────────── */}
+      <div
+        className="relative overflow-hidden pt-10 pb-12 px-4 text-center"
+        style={{
+          background: 'linear-gradient(150deg, hsl(var(--brand-primary)) 0%, hsl(var(--gold-accent)) 100%)',
+        }}
+      >
+        {/* Dot-grid decoration */}
+        <div
+          className="absolute inset-0 opacity-[0.12]"
+          style={{
+            backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)',
+            backgroundSize: '24px 24px',
+          }}
+          aria-hidden="true"
+        />
+
+        {/* Temple avatar */}
+        <div
+          className="relative inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/20 ring-2 ring-white/50 mb-4 select-none"
+          aria-hidden="true"
+        >
+          <span className="text-white font-bold text-2xl">{temple.name.charAt(0)}</span>
         </div>
-        <h1 className="text-xl font-bold text-text-primary">{temple.name}</h1>
-        <p className="text-sm text-text-muted mt-1">Online Donations & Seva Booking</p>
+
+        <h1 className="relative text-h2 font-bold text-white mb-1">{temple.name}</h1>
+        <p className="relative text-white/75 text-sm">Online Donations & Seva Booking</p>
       </div>
 
-      {/* Tab bar */}
-      <div className="flex justify-center my-6 px-4">
-        <div className="flex gap-1 p-1 bg-bg-surface-3 rounded-full border border-border-subtle w-full max-w-sm">
+      {/* ── Tab bar — floats up over hero bottom edge ─────────────────────── */}
+      <div className="flex justify-center -mt-5 px-4 relative z-10">
+        <div
+          className="flex gap-1 p-1 bg-bg-surface rounded-full border border-border-subtle shadow-card w-full max-w-sm"
+          role="tablist"
+          aria-label="Portal sections"
+        >
           <button
+            role="tab"
+            aria-selected={activeTab === 'donate'}
             onClick={() => setActiveTab('donate')}
-            className={`flex-1 py-2.5 px-4 rounded-full text-sm font-semibold transition-all duration-200 ${
+            className={[
+              'flex-1 flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-full',
+              'text-sm font-semibold transition-all duration-200 cursor-pointer',
               activeTab === 'donate'
                 ? 'bg-brand-primary text-white shadow-sm'
-                : 'text-text-secondary hover:text-text-primary'
-            }`}
+                : 'text-text-secondary hover:text-text-primary',
+            ].join(' ')}
           >
+            <Heart size={14} aria-hidden="true" />
             Donate
           </button>
+
           {showSevaTab && (
             <button
+              role="tab"
+              aria-selected={activeTab === 'seva'}
               onClick={() => setActiveTab('seva')}
-              className={`flex-1 py-2.5 px-4 rounded-full text-sm font-semibold transition-all duration-200 ${
+              className={[
+                'flex-1 flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-full',
+                'text-sm font-semibold transition-all duration-200 cursor-pointer',
                 activeTab === 'seva'
                   ? 'bg-brand-primary text-white shadow-sm'
-                  : 'text-text-secondary hover:text-text-primary'
-              }`}
+                  : 'text-text-secondary hover:text-text-primary',
+              ].join(' ')}
             >
+              <Sparkles size={14} aria-hidden="true" />
               Book Seva
             </button>
           )}
         </div>
       </div>
 
-      {/* Content — tab components own their own card wrapper */}
-      <div className="py-6 px-4">
+      {/* ── Tab content — tab components own their own card wrapper ──────── */}
+      <div className="pt-5 pb-6 px-4">
         {activeTab === 'donate' ? (
           <PublicDonateTab temple={temple} categories={categories} />
         ) : (
@@ -114,10 +150,28 @@ export function PublicPortalPage() {
         )}
       </div>
 
-      {/* Footer */}
-      <p className="text-center text-xs text-text-muted pb-8">
-        Powered by <span className="text-brand-primary font-medium">DevaSeva</span>
-      </p>
+      {/* ── Trust footer ─────────────────────────────────────────────────── */}
+      <div className="pb-8 px-4 flex flex-col items-center gap-2">
+        <div className="flex items-center gap-3 text-xs text-text-muted flex-wrap justify-center">
+          <span className="flex items-center gap-1">
+            <Shield size={11} aria-hidden="true" />
+            Secure Payment
+          </span>
+          <span aria-hidden="true">·</span>
+          <span className="flex items-center gap-1">
+            <FileCheck size={11} aria-hidden="true" />
+            80G Receipt
+          </span>
+          <span aria-hidden="true">·</span>
+          <span className="flex items-center gap-1">
+            <MessageCircle size={11} aria-hidden="true" />
+            WhatsApp Confirmation
+          </span>
+        </div>
+        <p className="text-xs text-text-muted">
+          Powered by <span className="text-brand-primary font-medium">DevaSeva</span>
+        </p>
+      </div>
     </div>
   );
 }
