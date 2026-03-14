@@ -2054,5 +2054,5 @@ FIX: Follow the build order in Section 12. Tests must pass before the next phase
 
 ---
 
-_DevaSeva CLAUDE.md — v2.0 — Infosware Solutions Pvt. Ltd. — Feb 2026_
+_DevaSeva CLAUDE.md — v2.0 — Infosware Pvt. Ltd. — Feb 2026_
 _Restart from scratch. Build it right this time._

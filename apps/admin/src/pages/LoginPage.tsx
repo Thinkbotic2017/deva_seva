@@ -184,7 +184,7 @@ export function LoginPage() {
           ))}
         </ul>
 
-        <p className="relative text-white/40 text-xs">Infosware Solutions Pvt. Ltd.</p>
+        <p className="relative text-white/40 text-xs">Infosware Pvt. Ltd.</p>
       </div>
 
       {/* ── Right panel — always visible ───────────────────────────────── */}
@@ -355,7 +355,7 @@ export function LoginPage() {
           </div>
 
           <p className="text-center text-caption text-text-muted mt-2">
-            Infosware Solutions Pvt. Ltd.
+            Infosware Pvt. Ltd.
           </p>
         </motion.div>
       </div>
