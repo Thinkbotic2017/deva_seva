@@ -420,7 +420,7 @@ function LedgerReportTab() {
                       <tr key={row.fundId ?? 'unallocated'} className="border-b border-border-subtle last:border-0">
                         <td className="py-2 text-text-primary">
                           {row.fundId
-                            ? row.fundId
+                            ? (row.fundName ?? row.fundId)
                             : <span className="text-text-muted italic">Unallocated</span>}
                         </td>
                         <td className="py-2 text-right text-success-DEFAULT font-medium">

@@ -123,6 +123,7 @@ export function useCreateDonation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: donationKeys.all });
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      void queryClient.invalidateQueries({ queryKey: ['devotees'] });
     },
   });
 }

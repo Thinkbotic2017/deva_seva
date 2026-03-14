@@ -119,7 +119,17 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           });
 
           if (!res.ok) {
-            throw new Error(`Refresh failed: ${res.status}`);
+            // 401/403 = token genuinely invalid/expired — force re-login.
+            // 5xx or other = transient server error — keep the stored token so
+            // the user can retry without losing their session.
+            if (res.status === 401 || res.status === 403) {
+              clearRefreshToken();
+              clearAccessToken();
+              set({ user: null, isReady: true });
+            } else {
+              set({ isReady: true });
+            }
+            return false;
           }
 
           // Backend wraps all responses in { success: true, data: T, requestId }
@@ -133,10 +143,9 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           set({ isReady: true });
           return true;
         } catch {
-          // Refresh token invalid or expired — clear everything and force re-login
-          clearRefreshToken();
-          clearAccessToken();
-          set({ user: null, isReady: true });
+          // Network-level failure (offline, DNS error, etc.) — do NOT wipe the
+          // stored refresh token. The user may just be temporarily offline.
+          set({ isReady: true });
           return false;
         }
       },

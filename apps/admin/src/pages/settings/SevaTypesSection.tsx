@@ -67,10 +67,11 @@ interface SevaTypeModalProps {
   onSubmit: () => void;
   isSubmitting: boolean;
   errors: Partial<Record<keyof SevaTypeForm, string>>;
+  submitError: string;
 }
 
 function SevaTypeModal({
-  isOpen, onClose, editing, form, onSetField, onSubmit, isSubmitting, errors,
+  isOpen, onClose, editing, form, onSetField, onSubmit, isSubmitting, errors, submitError,
 }: SevaTypeModalProps): JSX.Element {
   return (
     <Modal
@@ -213,7 +214,9 @@ function SevaTypeModal({
             <div
               role="switch"
               aria-checked={form.requiresSankalpa}
+              tabIndex={0}
               onClick={() => onSetField('requiresSankalpa', !form.requiresSankalpa)}
+              onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); onSetField('requiresSankalpa', !form.requiresSankalpa); } }}
               className={[
                 'relative w-11 h-6 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0',
                 form.requiresSankalpa ? 'bg-brand-primary' : 'bg-bg-surface-2 border border-border-subtle',
@@ -233,7 +236,9 @@ function SevaTypeModal({
             <div
               role="switch"
               aria-checked={form.isOnlineBookable}
+              tabIndex={0}
               onClick={() => onSetField('isOnlineBookable', !form.isOnlineBookable)}
+              onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); onSetField('isOnlineBookable', !form.isOnlineBookable); } }}
               className={[
                 'relative w-11 h-6 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0',
                 form.isOnlineBookable ? 'bg-brand-primary' : 'bg-bg-surface-2 border border-border-subtle',
@@ -249,6 +254,12 @@ function SevaTypeModal({
             <span className="text-body text-text-primary">Online Bookable</span>
           </label>
         </div>
+
+        {submitError && (
+          <p role="alert" className="text-caption text-danger-DEFAULT">
+            {submitError}
+          </p>
+        )}
 
         <div className="flex justify-end gap-3 pt-2">
           <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
@@ -274,6 +285,7 @@ export function SevaTypesSection(): JSX.Element {
   const [editingSevaType, setEditingSevaType] = useState<SevaType | null>(null);
   const [sevaForm, setSevaForm] = useState<SevaTypeForm>(EMPTY_SEVA_FORM);
   const [sevaFormErrors, setSevaFormErrors] = useState<Partial<Record<keyof SevaTypeForm, string>>>({});
+  const [submitError, setSubmitError] = useState('');
 
   const { data: sevaTypes = [], isLoading: sevaTypesLoading } = useSevaTypesAdmin();
   const createSevaTypeMutation = useCreateSevaType();
@@ -317,6 +329,7 @@ export function SevaTypesSection(): JSX.Element {
     setEditingSevaType(null);
     setSevaForm(EMPTY_SEVA_FORM);
     setSevaFormErrors({});
+    setSubmitError('');
   }
 
   function validateSevaForm(): boolean {
@@ -331,6 +344,7 @@ export function SevaTypesSection(): JSX.Element {
 
   async function handleSevaSubmit(): Promise<void> {
     if (!validateSevaForm()) return;
+    setSubmitError('');
     const dto: CreateSevaTypeDto = {
       name: sevaForm.name.trim(),
       nameHi: sevaForm.nameHi.trim() || undefined,
@@ -343,12 +357,17 @@ export function SevaTypesSection(): JSX.Element {
       isOnlineBookable: sevaForm.isOnlineBookable,
       pricingTiers: sevaForm.pricingTiers.filter((t) => t.name.trim()),
     };
-    if (editingSevaType) {
-      await updateSevaTypeMutation.mutateAsync({ id: editingSevaType.id, dto });
-    } else {
-      await createSevaTypeMutation.mutateAsync(dto);
+    try {
+      if (editingSevaType) {
+        await updateSevaTypeMutation.mutateAsync({ id: editingSevaType.id, dto });
+      } else {
+        await createSevaTypeMutation.mutateAsync(dto);
+      }
+      closeSevaModal();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      setSubmitError(message);
     }
-    closeSevaModal();
   }
 
   async function handleToggleSevaActive(sevaType: SevaType): Promise<void> {
@@ -498,6 +517,7 @@ export function SevaTypesSection(): JSX.Element {
         onSubmit={() => { void handleSevaSubmit(); }}
         isSubmitting={isSevaSubmitting}
         errors={sevaFormErrors}
+        submitError={submitError}
       />
     </>
   );

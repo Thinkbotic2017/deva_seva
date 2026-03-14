@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Donation } from '../../database/entities/donation.entity';
 import { DonationCategory } from '../../database/entities/donation-category.entity';
 import { FinanceLedger } from '../../database/entities/finance-ledger.entity';
+import { Fund } from '../../database/entities/fund.entity';
 import { SevaBooking } from '../../database/entities/seva-booking.entity';
 import { DonationMode, DonationStatus, LedgerType, SevaBookingStatus } from '@devaseva/types';
 import { DonationSummaryQueryDto } from './dto/donation-summary-query.dto';
@@ -40,6 +41,7 @@ export interface DonationSummary {
 /** Ledger total per fund (fundId=null means unallocated entries). */
 export interface FundBreakdown {
   fundId: string | null;
+  fundName: string | null;
   totalIncome: string;
   totalExpense: string;
 }
@@ -232,18 +234,20 @@ export class ReportsService {
     // ── Totals by fund ────────────────────────────────────────────────────────
     const fundRows = await qb
       .clone()
+      .leftJoin(Fund, 'f', 'f.id = l.fund_id')
       .select('l.fund_id', 'fundId')
+      .addSelect('f.name', 'fundName')
       .addSelect('l.type', 'type')
       .addSelect('COALESCE(SUM(l.amount::numeric), 0)', 'total')
-      .groupBy('l.fund_id, l.type')
-      .getRawMany<{ fundId: string | null; type: LedgerType; total: string }>();
+      .groupBy('l.fund_id, f.name, l.type')
+      .getRawMany<{ fundId: string | null; fundName: string | null; type: LedgerType; total: string }>();
 
     // Merge fund rows into a single FundBreakdown per fundId
     const fundMap = new Map<string | null, FundBreakdown>();
     for (const row of fundRows) {
       const key = row.fundId ?? null;
       if (!fundMap.has(key)) {
-        fundMap.set(key, { fundId: key, totalIncome: '0.00', totalExpense: '0.00' });
+        fundMap.set(key, { fundId: key, fundName: row.fundName ?? null, totalIncome: '0.00', totalExpense: '0.00' });
       }
       const entry = fundMap.get(key)!;
       if (row.type === LedgerType.INCOME) {

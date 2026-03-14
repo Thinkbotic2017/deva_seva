@@ -65,10 +65,11 @@ interface CategoryModalProps {
   onSubmit: () => void;
   isSubmitting: boolean;
   errors: Partial<Record<keyof CategoryForm, string>>;
+  submitError: string;
 }
 
 function CategoryModal({
-  isOpen, onClose, editing, form, onSetField, onSubmit, isSubmitting, errors,
+  isOpen, onClose, editing, form, onSetField, onSubmit, isSubmitting, errors, submitError,
 }: CategoryModalProps): JSX.Element {
   return (
     <Modal
@@ -136,7 +137,9 @@ function CategoryModal({
           <div
             role="switch"
             aria-checked={form.is80gEligible}
+            tabIndex={0}
             onClick={() => onSetField('is80gEligible', !form.is80gEligible)}
+            onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); onSetField('is80gEligible', !form.is80gEligible); } }}
             className={[
               'relative w-11 h-6 rounded-full transition-colors duration-200 cursor-pointer',
               form.is80gEligible ? 'bg-brand-primary' : 'bg-bg-surface-2 border border-border-subtle',
@@ -154,6 +157,12 @@ function CategoryModal({
             Donations qualify for tax exemption
           </span>
         </label>
+
+        {submitError && (
+          <p role="alert" className="text-caption text-danger-DEFAULT">
+            {submitError}
+          </p>
+        )}
 
         <div className="flex justify-end gap-3 pt-2">
           <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
@@ -179,6 +188,7 @@ export function DonationCategoriesSection(): JSX.Element {
   const [editingCategory, setEditingCategory] = useState<DonationCategory | null>(null);
   const [form, setForm] = useState<CategoryForm>(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof CategoryForm, string>>>({});
+  const [submitError, setSubmitError] = useState('');
 
   const { data: categories = [], isLoading } = useDonationCategoriesAdmin();
   const createMutation = useCreateCategory();
@@ -217,6 +227,7 @@ export function DonationCategoriesSection(): JSX.Element {
     setEditingCategory(null);
     setForm(EMPTY_FORM);
     setFormErrors({});
+    setSubmitError('');
   }
 
   function validate(): boolean {
@@ -231,6 +242,7 @@ export function DonationCategoriesSection(): JSX.Element {
 
   async function handleSubmit(): Promise<void> {
     if (!validate()) return;
+    setSubmitError('');
     const dto: CreateDonationCategoryDto = {
       name: form.name.trim(),
       description: form.description.trim() || undefined,
@@ -238,12 +250,17 @@ export function DonationCategoriesSection(): JSX.Element {
       color: form.color,
       sortOrder: form.sortOrder,
     };
-    if (editingCategory) {
-      await updateMutation.mutateAsync({ id: editingCategory.id, dto });
-    } else {
-      await createMutation.mutateAsync(dto);
+    try {
+      if (editingCategory) {
+        await updateMutation.mutateAsync({ id: editingCategory.id, dto });
+      } else {
+        await createMutation.mutateAsync(dto);
+      }
+      closeModal();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      setSubmitError(message);
     }
-    closeModal();
   }
 
   async function handleToggleActive(category: DonationCategory): Promise<void> {
@@ -380,6 +397,7 @@ export function DonationCategoriesSection(): JSX.Element {
         onSubmit={() => { void handleSubmit(); }}
         isSubmitting={isSubmitting}
         errors={formErrors}
+        submitError={submitError}
       />
     </>
   );

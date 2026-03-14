@@ -1,4 +1,4 @@
-import { apiPost } from '@/lib/api-client';
+import { apiGet, apiPost } from '@/lib/api-client';
 import {
   setAccessToken,
   setRefreshToken,
@@ -30,7 +30,7 @@ export async function requestOtp(phone: string): Promise<RequestOtpResult> {
 /**
  * Step 2 — Verify OTP and obtain token pair.
  * Stores the access token in memory immediately.
- * The refresh token arrives as an httpOnly cookie — not accessible to JS.
+ * The refresh token is returned in the response body and stored in localStorage under 'ds_rt'.
  */
 export async function verifyOtp(
   sessionId: string,
@@ -61,5 +61,5 @@ export async function logout(): Promise<void> {
 
 /** Fetches the authenticated user's profile. */
 export async function fetchMe(): Promise<{ user: AuthUser }> {
-  return apiPost<{ user: AuthUser }>('/auth/me');
+  return apiGet<{ user: AuthUser }>('/auth/me');
 }

@@ -61,6 +61,7 @@ export interface DaySheet {
 
 export interface FundBreakdown {
   fundId: string | null;
+  fundName?: string | null;
   totalIncome: string;
   totalExpense: string;
 }

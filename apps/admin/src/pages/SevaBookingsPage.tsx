@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -119,6 +119,8 @@ export function SevaBookingsPage() {
   const [devoteeId, setDevoteeId] = useState<string | null>(null);
   const [devoteeStatus, setDevoteeStatus] = useState<'found' | 'new' | null>(null);
   const [devoteeFoundName, setDevoteeFoundName] = useState('');
+  const [devoteeWarning, setDevoteeWarning] = useState('');
+  const phoneDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data, isLoading, isError } = useSevaBookings(filters);
   const { data: sevaTypes = [] } = useSevaTypes();
@@ -140,15 +142,19 @@ export function SevaBookingsPage() {
     setDevoteeId(null);
     setDevoteeStatus(null);
     setDevoteeFoundName('');
+    setDevoteeWarning('');
   }
 
-  async function handlePhoneChange(rawValue: string): Promise<void> {
-    setField('devoteePhone', rawValue);
-    const cleaned = rawValue.replace(/\D/g, '');
+  function handlePhoneChange(rawValue: string): void {
+    const cleaned = rawValue.replace(/\D/g, '').slice(0, 10);
+    setField('devoteePhone', cleaned);
+
+    // Clear previous debounce timer
+    if (phoneDebounceRef.current) clearTimeout(phoneDebounceRef.current);
 
     if (cleaned.length === 0) {
       if (devoteeStatus === 'found') {
-        setForm((prev) => ({ ...prev, devoteePhone: rawValue, devoteeName: '' }));
+        setForm((prev) => ({ ...prev, devoteePhone: '', devoteeName: '' }));
       }
       setDevoteeId(null);
       setDevoteeStatus(null);
@@ -156,21 +162,31 @@ export function SevaBookingsPage() {
       return;
     }
 
-    if (!/^[6-9]\d{9}$/.test(cleaned)) return;
-
-    try {
-      const result = await apiGet<{ data: DevoteeDetail[]; total: number }>('/devotees', { search: cleaned, limit: 1 });
-      if (!result.data.length) throw new Error('not found');
-      const devotee = result.data[0]!;
-      setDevoteeId(devotee.id);
-      setDevoteeFoundName(devotee.name);
-      setDevoteeStatus('found');
-      setForm((prev) => ({ ...prev, devoteeName: devotee.name }));
-    } catch {
-      setDevoteeId(null);
+    // Only look up once we have a complete valid number, after a 300ms pause
+    if (!/^[6-9]\d{9}$/.test(cleaned)) {
+      setDevoteeStatus(null);
       setDevoteeFoundName('');
-      setDevoteeStatus('new');
+      setDevoteeId(null);
+      return;
     }
+
+    phoneDebounceRef.current = setTimeout(() => {
+      void (async () => {
+        try {
+          const result = await apiGet<{ data: DevoteeDetail[]; meta: { total: number } }>('/devotees', { search: cleaned, limit: 1 });
+          if (!result.data.length) throw new Error('not found');
+          const devotee = result.data[0]!;
+          setDevoteeId(devotee.id);
+          setDevoteeFoundName(devotee.name);
+          setDevoteeStatus('found');
+          setForm((prev) => ({ ...prev, devoteeName: devotee.name }));
+        } catch {
+          setDevoteeId(null);
+          setDevoteeFoundName('');
+          setDevoteeStatus('new');
+        }
+      })();
+    }, 300);
   }
 
   function validate(): boolean {
@@ -213,7 +229,7 @@ export function SevaBookingsPage() {
                 });
                 await apiPatch(`/sevas/bookings/${createdBooking.id}/devotee`, { devoteeId: newDevotee.id });
               } catch {
-                // silently ignore — booking already saved
+                setDevoteeWarning('Booking saved. Devotee registration failed — please add them manually.');
               }
             })();
           }
@@ -233,6 +249,22 @@ export function SevaBookingsPage() {
 
   return (
     <div className="space-y-4">
+      {devoteeWarning && (
+        <div
+          role="alert"
+          className="flex items-center justify-between gap-4 rounded-lg bg-warning-subtle border border-warning-DEFAULT/30 px-4 py-3 text-warning-fg text-body"
+        >
+          <span>{devoteeWarning}</span>
+          <button
+            type="button"
+            onClick={() => setDevoteeWarning('')}
+            className="flex-shrink-0 text-warning-fg/70 hover:text-warning-fg transition-colors"
+            aria-label="Dismiss"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -412,7 +444,7 @@ export function SevaBookingsPage() {
                 type="tel"
                 placeholder="98765 43210"
                 value={form.devoteePhone ?? ''}
-                onChange={(e) => { void handlePhoneChange(e.target.value); }}
+                onChange={(e) => handlePhoneChange(e.target.value)}
                 error={formErrors.devoteePhone}
               />
               {devoteeStatus === 'found' && (
