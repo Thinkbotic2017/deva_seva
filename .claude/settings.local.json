@@ -37,7 +37,8 @@
       "Bash(python3:*)",
       "Bash(python:*)",
       "Bash(py:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(find:*)"
     ]
   }
 }

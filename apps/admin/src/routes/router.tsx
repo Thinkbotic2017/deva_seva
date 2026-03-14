@@ -12,6 +12,11 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { StaffPage } from '@/pages/StaffPage';
 import { SuperAdminPage } from '@/pages/SuperAdminPage';
 import { PublicPortalPage } from '@/pages/public/PublicPortalPage';
+import { WebsiteHomePage } from '@/pages/website/WebsiteHomePage';
+import { WebsiteFeaturesPage } from '@/pages/website/WebsiteFeaturesPage';
+import { WebsitePricingPage } from '@/pages/website/WebsitePricingPage';
+import { WebsiteAboutPage } from '@/pages/website/WebsiteAboutPage';
+import { WebsiteContactPage } from '@/pages/website/WebsiteContactPage';
 
 /**
  * Role allow-lists for route guards.
@@ -47,6 +52,14 @@ const ROLES_TEMPLE = [
  *   2. Per-route <ProtectedRoute allowedRoles={[...]}>  — role check
  */
 export const router = createBrowserRouter([
+  // ── Public marketing pages (no auth required) ─────────────────
+  { path: '/',         element: <WebsiteHomePage /> },
+  { path: '/features', element: <WebsiteFeaturesPage /> },
+  { path: '/pricing',  element: <WebsitePricingPage /> },
+  { path: '/about',    element: <WebsiteAboutPage /> },
+  { path: '/contact',  element: <WebsiteContactPage /> },
+
+  // ── Auth & portal ─────────────────────────────────────────────
   {
     path: '/login',
     element: <LoginPage />,
@@ -61,7 +74,6 @@ export const router = createBrowserRouter([
       {
         element: <AppShell />,
         children: [
-          { index: true, element: <Navigate to="/dashboard" replace /> },
           {
             path: 'dashboard',
             element: (
