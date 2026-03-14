@@ -824,8 +824,8 @@ sequenceDiagram
     U->>A: POST /sevas/bookings { sevaTypeId, sevaDate, timeSlot, tierName, amount }
     A->>DB: COUNT confirmed bookings for (sevaTypeId, sevaDate, timeSlot)
     DB-->>A: count < maxBookingsPerSlot
-    A->>DB: INSERT seva_bookings (status=CONFIRMED for cash/counter; PENDING_PAYMENT for online)
-    A->>DB: INSERT finance_ledger (type=INCOME, is_auto_posted=true) — if cash
+    A->>DB: INSERT seva_bookings -- CONFIRMED [cash] or PENDING_PAYMENT [online]
+    A->>DB: INSERT finance_ledger type=INCOME, is_auto_posted=true [cash only]
     A->>Q: Add job to whatsapp_outbound { bookingId, template: seva_confirmation }
     A-->>U: 201 Created { sevaBooking }
 
@@ -833,8 +833,8 @@ sequenceDiagram
     G-->>Q: messageId
     Q->>DB: UPDATE seva_bookings SET confirmation_sent_at
 
-    Note over A,G: Online booking path uses Razorpay webhook (same as donation flow)
-    Note over A,G: 24h before seva_date: seva_reminder cron job queues WhatsApp reminder
+    Note over A,G: Online booking uses Razorpay webhook same as donation flow
+    Note over A,G: 24h before seva date, seva_reminder cron queues WhatsApp reminder
 ```
 
 ### 5.4 Webhook Flow
