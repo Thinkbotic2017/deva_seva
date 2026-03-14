@@ -100,7 +100,7 @@ export function WebsiteContactPage() {
                 <div>
                   <p className="text-sm font-semibold text-text-primary mb-0.5">Location</p>
                   <p className="text-sm text-text-secondary">
-                    Infosware Solutions Pvt. Ltd.<br />
+                    Infosware Pvt. Ltd.<br />
                     Noida, Uttar Pradesh, India
                   </p>
                 </div>

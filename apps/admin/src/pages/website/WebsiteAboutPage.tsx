@@ -26,7 +26,7 @@ export function WebsiteAboutPage() {
     <WebsiteLayout>
       <WebsiteSEO
         title="About Us"
-        description="DevaSeva was built by Infosware Solutions Pvt. Ltd. to bring modern software to India's temples — without the complexity. Learn our story and mission."
+        description="DevaSeva was built by Infosware Pvt. Ltd. to bring modern software to India's temples — without the complexity. Learn our story and mission."
         canonical="https://devaseva.in/about"
       />
 
@@ -72,7 +72,7 @@ export function WebsiteAboutPage() {
           <div className="prose prose-lg max-w-none space-y-6 text-text-secondary leading-relaxed">
             <p>
               DevaSeva was built by{' '}
-              <strong className="text-text-primary">Infosware Solutions Pvt. Ltd.</strong>{' '}
+              <strong className="text-text-primary">Infosware Pvt. Ltd.</strong>{' '}
               to bring modern software to India's temples — without the complexity that has historically kept smaller mandirs from adopting technology.
             </p>
             <p>
@@ -125,14 +125,14 @@ export function WebsiteAboutPage() {
               The Company
             </h2>
             <p className="text-text-secondary leading-relaxed mb-4">
-              <strong className="text-text-primary">Infosware Solutions Pvt. Ltd.</strong> is a software company based in Noida, Uttar Pradesh, India. We build technology products for sectors where good software is scarce — and where the impact of that software is deeply meaningful.
+              <strong className="text-text-primary">Infosware Pvt. Ltd.</strong> is a software company based in Noida, Uttar Pradesh, India. We build technology products for sectors where good software is scarce — and where the impact of that software is deeply meaningful.
             </p>
             <p className="text-text-secondary leading-relaxed mb-6">
               DevaSeva is our flagship product for the temple management sector. We are committed to long-term development, compliance with Indian tax regulations, and continuous improvement based on real temple operations.
             </p>
             <div className="flex items-center gap-3 text-sm text-text-muted pt-4 border-t border-border-subtle">
               <Flame size={16} className="text-brand-primary" aria-hidden="true" />
-              <span>Infosware Solutions Pvt. Ltd., Noida, Uttar Pradesh, India</span>
+              <span>Infosware Pvt. Ltd., Noida, Uttar Pradesh, India</span>
             </div>
           </div>
         </div>
