@@ -40,12 +40,20 @@ export class AuthController {
   async requestOtp(
     @Body() dto: RequestOtpDto,
     @Req() req: Request,
-  ): Promise<{ sessionId: string; expiresAt: Date }> {
+  ): Promise<{ sessionId: string; expiresAt: Date; devOtp?: string }> {
     const ipAddress = req.ip;
     const result = await this.authService.requestOtp(dto, ipAddress);
 
-    // Never return the OTP in the response — it is delivered out-of-band.
-    return { sessionId: result.sessionId, expiresAt: result.expiresAt };
+    // OTP is delivered out-of-band (SMS/WhatsApp) in production.
+    // devOtp is only present when NODE_ENV === 'development'.
+    const response: { sessionId: string; expiresAt: Date; devOtp?: string } = {
+      sessionId: result.sessionId,
+      expiresAt: result.expiresAt,
+    };
+    if (result.devOtp !== undefined) {
+      response.devOtp = result.devOtp;
+    }
+    return response;
   }
 
   /**

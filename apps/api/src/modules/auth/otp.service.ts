@@ -30,6 +30,8 @@ export interface OtpGenerateResult {
   otp: string;
   sessionId: string;
   expiresAt: Date;
+  /** Set only in development — exposes OTP for local testing. Never present in production. */
+  devOtp?: string;
 }
 
 export interface OtpVerifyResult {
@@ -72,14 +74,6 @@ export class OtpService {
     await this.enforceRateLimit(phone, ipAddress);
 
     const otp = this.generateOtpCode();
-    if (process.env.NODE_ENV === 'development') {
-      const fs = await import('fs/promises');
-      await fs.writeFile(
-        'otp-dev.txt',
-        `${new Date().toISOString()} | phone=${phone} | otp=${otp}\n`,
-        { flag: 'a' }
-      );
-    }
     const otpHash = await bcrypt.hash(otp, BCRYPT_ROUNDS);
     const expiresAt = new Date(Date.now() + OTP_EXPIRY_SECONDS * 1000);
 
@@ -99,7 +93,11 @@ export class OtpService {
     await this.incrementRateLimit(phone);
 
     this.logger.log(`OTP session created for phone ${phone} [purpose=${purpose}]`);
-    return { otp, sessionId: saved.id, expiresAt };
+    const result: OtpGenerateResult = { otp, sessionId: saved.id, expiresAt };
+    if (process.env.NODE_ENV === 'development') {
+      result.devOtp = otp;
+    }
+    return result;
   }
 
   /**

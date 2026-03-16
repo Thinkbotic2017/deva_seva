@@ -10,6 +10,8 @@ import type { AuthUser } from '@/store/auth.store';
 export interface RequestOtpResult {
   sessionId: string;
   expiresAt: string;
+  /** Only present when the API is running in development mode. */
+  devOtp?: string;
 }
 
 export interface VerifyOtpResult {

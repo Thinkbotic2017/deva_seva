@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { requestOtp, verifyOtp } from '@/api/auth.api';
 import { useAuthStore } from '@/store/auth.store';
-import { ShieldCheck, FileCheck, Building2, ArrowLeft, LockKeyhole } from 'lucide-react';
+import { ShieldCheck, FileCheck, Building2, ArrowLeft, LockKeyhole, X } from 'lucide-react';
 
 const OTP_LENGTH = 6;
 
@@ -33,6 +33,8 @@ export function LoginPage() {
   const [sessionId, setSessionId] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [otpError, setOtpError] = useState('');
+  /** Dev-only: OTP returned by the API when NODE_ENV === 'development'. Always '' in production. */
+  const [devOtp, setDevOtp] = useState('');
 
   const otpInputRefs = useRef<Array<HTMLInputElement | null>>(Array(OTP_LENGTH).fill(null));
 
@@ -42,6 +44,7 @@ export function LoginPage() {
     mutationFn: (phoneNumber: string) => requestOtp(phoneNumber),
     onSuccess: (result) => {
       setSessionId(result.sessionId);
+      if (result.devOtp) setDevOtp(result.devOtp);
       setStep('otp');
       setPhoneError('');
     },
@@ -133,6 +136,7 @@ export function LoginPage() {
     setStep('phone');
     setOtpDigits(Array(OTP_LENGTH).fill(''));
     setOtpError('');
+    setDevOtp('');
   }
 
   const otpFilled = otpDigits.join('').length === OTP_LENGTH;
@@ -346,6 +350,13 @@ export function LoginPage() {
                 </motion.form>
               )}
             </AnimatePresence>
+
+            {devOtp && (
+              <div className="flex items-center justify-between gap-3 rounded-lg bg-warning-subtle border border-warning/30 px-4 py-3 text-warning-fg text-sm mt-4">
+                <span>🔐 Dev OTP: <strong className="font-mono text-base tracking-widest">{devOtp}</strong></span>
+                <button onClick={() => setDevOtp('')} aria-label="Dismiss"><X size={14} /></button>
+              </div>
+            )}
           </div>
 
           {/* Security note */}
